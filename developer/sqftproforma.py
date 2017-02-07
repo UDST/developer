@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import logging
+import utils
 
 
 logger = logging.getLogger(__name__)
@@ -264,13 +265,113 @@ class SqFtProForma(object):
 
     """
 
-    def __init__(self, config=None):
-        if config is None:
-            config = SqFtProFormaConfig()
-        config.check_is_reasonable()
-        self.config = config
-        self.config._convert_types()
-        self._generate_lookup()
+    def __init__(self, parcel_sizes, fars, uses, residential_uses, forms,
+                 profit_factor, building_efficiency, parcel_coverage,
+                 cap_rate, parking_rates, sqft_per_rate, parking_configs,
+                 costs, heights_for_costs, parking_sqft_d, parking_cost_d,
+                 height_per_story, max_retail_height, max_industrial_height
+                 ):
+
+        self.parcel_sizes = parcel_sizes
+        self.fars = fars
+        self.uses = uses
+        self.residential_uses = residential_uses
+        self.forms = forms
+        self.profit_factor = profit_factor
+        self.building_efficiency = building_efficiency
+        self.parcel_coverage = parcel_coverage
+        self.cap_rate = cap_rate
+        self.parking_rates = parking_rates
+        self.sqft_per_rate = sqft_per_rate
+        self.parking_configs = parking_configs
+        self.costs = costs
+        self.heights_for_costs = heights_for_costs
+        self.parking_sqft_d = parking_sqft_d
+        self.parking_cost_d = parking_cost_d
+        self.height_per_story = height_per_story
+        self.max_retail_height = max_retail_height
+        self.max_industrial_height = max_industrial_height
+
+        self.check_is_reasonable()
+
+        self.tiled_parcel_sizes = np.reshape(
+            np.repeat(self.parcel_sizes, self.fars.size), (-1, 1))
+
+        # if config is None:
+        #     config = SqFtProFormaConfig()
+        # config.check_is_reasonable()
+        # self.config = config
+        # self.config._convert_types()
+        # self._generate_lookup()
+
+    def check_is_reasonable(self):
+        fars = pd.Series(self.fars)
+        assert len(fars[fars > 20]) == 0
+        assert len(fars[fars <= 0]) == 0
+        for k, v in self.forms.iteritems():
+            assert isinstance(v, dict)
+            for k2, v2 in self.forms[k].iteritems():
+                assert isinstance(k2, str)
+                assert isinstance(v2, float)
+            for k2, v2 in self.forms[k].iteritems():
+                assert isinstance(k2, str)
+                assert isinstance(v2, float)
+        for k, v in self.parking_rates.iteritems():
+            assert isinstance(k, str)
+            assert k in self.uses
+            assert 0 <= v < 5
+        for k, v in self.parking_sqft_d.iteritems():
+            assert isinstance(k, str)
+            assert k in self.parking_configs
+            assert 50 <= v <= 1000
+        for k, v in self.parking_sqft_d.iteritems():
+            assert isinstance(k, str)
+            assert k in self.parking_cost_d
+            assert 10 <= v <= 300
+        for v in self.heights_for_costs:
+            assert isinstance(v, int) or isinstance(v, float)
+            if np.isinf(v):
+                continue
+            assert 0 <= v <= 1000
+        for k, v in self.costs.iteritems():
+            assert isinstance(k, str)
+            assert k in self.uses
+            for i in v:
+                assert 10 < i < 1000
+
+    @classmethod
+    def from_yaml(cls, yaml_str=None, str_or_buffer=None):
+        """
+        Create a SqftProForma instance from a saved YAML configuration.
+        Arguments are mutally exclusive.
+
+        Parameters
+        ----------
+        yaml_str : str, optional
+            A YAML string from which to load model.
+        str_or_buffer : str or file like, optional
+            File name or buffer from which to load YAML.
+
+        Returns
+        -------
+        SqFtProForma
+
+        """
+        cfg = utils.yaml_to_dict(yaml_str, str_or_buffer)
+
+        model = cls(
+            cfg['parcel_sizes'], cfg['fars'], cfg['uses'],
+            cfg['residential_uses'], cfg['forms'], cfg['profit_factor'],
+            cfg['building_efficiency'], cfg['parcel_coverage'],
+            cfg['cap_rate'], cfg['parking_rates'], cfg['sqft_per_rate'],
+            cfg['parking_configs'], cfg['costs'], cfg['heights_for_costs'],
+            cfg['parking_sqft_d'], cfg['parking_cost_d'],
+            cfg['height_per_story'], cfg['max_retail_height'],
+            cfg['max_industrial_height']
+        )
+
+        logger.debug('loaded SqftProForma model from YAML')
+        return model
 
     def _building_cost(self, use_mix, stories):
         """
