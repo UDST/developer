@@ -20,7 +20,7 @@ def simple_dev_inputs():
 
 
 def test_developer(simple_dev_inputs):
-    pf = sqpf.SqFtProForma()
+    pf = sqpf.SqFtProForma.from_defaults()
 
     out = pf.lookup("residential", simple_dev_inputs)
     dev = developer.Developer({"residential": out})
@@ -53,7 +53,7 @@ def test_developer(simple_dev_inputs):
 
 
 def test_developer_compute_units_to_build(simple_dev_inputs):
-    pf = sqpf.SqFtProForma()
+    pf = sqpf.SqFtProForma.from_defaults()
     out = pf.lookup("residential", simple_dev_inputs)
     dev = developer.Developer({"residential": out})
     to_build = dev.compute_units_to_build(30, 30, .1)
@@ -61,7 +61,7 @@ def test_developer_compute_units_to_build(simple_dev_inputs):
 
 
 def test_developer_compute_forms_max_profit(simple_dev_inputs):
-    pf = sqpf.SqFtProForma()
+    pf = sqpf.SqFtProForma.from_defaults()
     out = pf.lookup("residential", simple_dev_inputs)
     dev = developer.Developer({"residential": out})
     dev.keep_form_with_max_profit()
