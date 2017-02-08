@@ -120,6 +120,27 @@ class SqFtProForma(object):
         This means $1/year is equivalent to 1/cap_rate present dollars.
         This is a macroeconomic input that is widely available on the
         internet.
+    residential_to_yearly : boolean (optional)
+        Whether to use the cap rate to convert the residential price from total
+        sales price per sqft to rent per sqft
+    forms_to_test : list of strings (optional)
+        Pass the list of the names of forms to test for feasibility - if set to
+        None will use all the forms available in config
+    only_built : boolean (optional)
+        Only return those buildings that are profitable
+    pass_through : list of strings (optional)
+        Will be passed to the feasibility lookup function - is used to pass
+        variables from the parcel dataframe to the output dataframe, usually
+        for debugging
+    simple_zoning: boolean (optional)
+        This can be set to use only max_dua for residential and max_far for
+        non-residential.  This can be handy if you want to deal with zoning
+        outside of the developer model.
+    parcel_filter : string (optional)
+        A filter to apply to the parcels data frame to remove parcels from
+        consideration - is typically used to remove parcels with buildings
+        older than a certain date for historical preservation, but is
+        generally useful ADD TO CONFIG
 
     """
 
@@ -127,7 +148,10 @@ class SqFtProForma(object):
                  profit_factor, building_efficiency, parcel_coverage,
                  cap_rate, parking_rates, sqft_per_rate, parking_configs,
                  costs, heights_for_costs, parking_sqft_d, parking_cost_d,
-                 height_per_story, max_retail_height, max_industrial_height
+                 height_per_story, max_retail_height, max_industrial_height,
+                 residential_to_yearly=True, forms_to_test=None,
+                 only_built=True, pass_through=None, simple_zoning=False,
+                 parcel_filter=None
                  ):
 
         self.parcel_sizes = parcel_sizes
@@ -149,6 +173,13 @@ class SqFtProForma(object):
         self.height_per_story = height_per_story
         self.max_retail_height = max_retail_height
         self.max_industrial_height = max_industrial_height
+
+        self.residential_to_yearly = residential_to_yearly
+        self.forms_to_test = forms_to_test or self.forms.keys()
+        self.only_built = only_built
+        self.pass_through = pass_through
+        self.simple_zoning = simple_zoning
+        self.parcel_filter = parcel_filter
 
         self.check_is_reasonable()
         self._convert_types()
