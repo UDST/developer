@@ -44,13 +44,41 @@ def simple_dev_inputs_low_cost():
 
 
 def test_sqftproforma_config_defaults():
-    sqpf.SqFtProFormaConfig()
+    sqpf.SqFtProForma.from_defaults()
+
+
+def test_sqftproforma_to_dict():
+    original_config = sqpf.SqFtProForma.get_defaults()
+    pf = sqpf.SqFtProForma.from_defaults()
+    new_config = pf.to_dict
+
+    assert original_config == new_config
+
+
+def test_sqftproforma_to_yaml():
+    if os.path.exists('test_sqftproforma_config.yaml'):
+        os.remove('test_sqftproforma_config.yaml')
+
+    pf = sqpf.SqFtProForma.from_defaults()
+    with open('test_sqftproforma_config.yaml', 'wb') as yaml_file:
+        pf.to_yaml(yaml_file)
+        yaml_string = pf.to_yaml()
+
+    pf_from_yaml_file = sqpf.SqFtProForma.from_yaml(
+        str_or_buffer='test_sqftproforma_config.yaml')
+    assert pf.to_dict == pf_from_yaml_file.to_dict
+
+    pf_from_yaml_string = sqpf.SqFtProForma.from_yaml(
+        yaml_str=yaml_string)
+    assert pf.to_dict == pf_from_yaml_string.to_dict
+
+    os.remove('test_sqftproforma_config.yaml')
 
 
 def test_sqftproforma_defaults(simple_dev_inputs):
-    pf = sqpf.SqFtProForma()
+    pf = sqpf.SqFtProForma.from_defaults()
 
-    for form in pf.config.forms:
+    for form in pf.forms:
         out = pf.lookup(form, simple_dev_inputs)
         if form == "industrial":
             assert len(out) == 0
@@ -61,7 +89,7 @@ def test_sqftproforma_defaults(simple_dev_inputs):
 
 
 def test_sqftproforma_max_dua(simple_dev_inputs_low_cost, max_dua_dev_inputs):
-    pf = sqpf.SqFtProForma()
+    pf = sqpf.SqFtProForma.from_defaults()
 
     out = pf.lookup("residential", simple_dev_inputs_low_cost)
     # normal run return 3
@@ -73,9 +101,9 @@ def test_sqftproforma_max_dua(simple_dev_inputs_low_cost, max_dua_dev_inputs):
 
 
 def test_sqftproforma_low_cost(simple_dev_inputs_low_cost):
-    pf = sqpf.SqFtProForma()
+    pf = sqpf.SqFtProForma.from_defaults()
 
-    for form in pf.config.forms:
+    for form in pf.forms:
         out = pf.lookup(form, simple_dev_inputs_low_cost)
         if form == "industrial":
             assert len(out) == 3
@@ -86,7 +114,7 @@ def test_sqftproforma_low_cost(simple_dev_inputs_low_cost):
 
 
 def test_reasonable_feasibility_results():
-    pf = sqpf.SqFtProForma()
+    pf = sqpf.SqFtProForma.from_defaults()
     df = pd.DataFrame(
         {'residential': [30, 20, 10],
          'office': [15, 15, 15],
@@ -109,7 +137,7 @@ def test_reasonable_feasibility_results():
     assert first.total_cost == first.building_cost + df.iloc[0].land_cost
     # revenue per sqft should be between 200 and 800 per sqft
     assert 200 < first.building_revenue/first.building_sqft < 800
-    assert first.residential_sqft == first.building_sqft * pf.config.building_efficiency
+    assert first.residential_sqft == first.building_sqft * pf.building_efficiency
     # because of parcel inefficiency, stories should be greater than far, but not too much more
     assert first.max_profit_far < first.stories < first.max_profit_far * 3.0
     assert first.non_residential_sqft == 0
@@ -118,18 +146,18 @@ def test_reasonable_feasibility_results():
     assert len(out) == 1
 
     # we should be able to reduce parking requirements and build to max far
-    c = sqpf.SqFtProFormaConfig()
-    c.parking_rates["residential"] = 0
-    pf = sqpf.SqFtProForma(c)
+    defaults = sqpf.SqFtProForma.get_defaults()
+    defaults['parking_rates']['residential'] = 0
+    pf = sqpf.SqFtProForma(**defaults)
     out = pf.lookup("residential", df)
     second = out.iloc[1]
     assert second.max_profit_far == 2.0
 
 
 def test_sqftproforma_high_cost(simple_dev_inputs_high_cost):
-    pf = sqpf.SqFtProForma()
+    pf = sqpf.SqFtProForma.from_defaults()
 
-    for form in pf.config.forms:
+    for form in pf.forms:
         out = pf.lookup(form, simple_dev_inputs_high_cost)
         if form == "industrial":
             assert len(out) == 0
@@ -140,27 +168,27 @@ def test_sqftproforma_high_cost(simple_dev_inputs_high_cost):
 
 
 def test_debug_info():
-    pf = sqpf.SqFtProForma()
-    for form in pf.config.forms:
-        for parking_config in pf.config.parking_configs:
+    pf = sqpf.SqFtProForma.from_defaults()
+    for form in pf.forms:
+        for parking_config in pf.parking_configs:
             pf.get_debug_info(form, parking_config)
 
 
 def test_appropriate_range():
     # these are price per sqft costs.  I suppose these could change as
     # time goes on, but for now this is a reasonable range for sqft costs
-    pf = sqpf.SqFtProForma()
-    for form in pf.config.forms:
-        for park_config in pf.config.parking_configs:
+    pf = sqpf.SqFtProForma.from_defaults()
+    for form in pf.forms:
+        for park_config in pf.parking_configs:
             s = pf.get_ave_cost_sqft(form, park_config)
             assert len(s[s > 400.0]) == 0
             assert len(s[s < 50.0]) == 0
 
 
 def test_roughly_monotonic():
-    pf = sqpf.SqFtProForma()
-    for form in pf.config.forms:
-        for park_config in pf.config.parking_configs:
+    pf = sqpf.SqFtProForma.from_defaults()
+    for form in pf.forms:
+        for park_config in pf.parking_configs:
             s = pf.get_ave_cost_sqft(form, park_config).values
             for i in range(0, s.size-1):
                 left, right = s[i], s[i+1]
@@ -171,16 +199,11 @@ def test_roughly_monotonic():
                 assert left < right*1.1
 
 
-def test_config_params():
-    c = sqpf.SqFtProFormaConfig()
-    c.check_is_reasonable()
-
-
 class TestSqFtProFormaDebug(object):
     def teardown_method(self, method):
         if os.path.exists('even_rents.png'):
             os.remove('even_rents.png')
 
     def test_sqftproforma_debug(self):
-        pf = sqpf.SqFtProForma()
+        pf = sqpf.SqFtProForma.from_defaults()
         pf._debug_output()

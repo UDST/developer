@@ -17,6 +17,7 @@ install:
   conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy pandas pytest matplotlib
 - source activate test-environment
 - conda list
+- pip install .
 
 before_script:
 - cd $TRAVIS_BUILD_DIR
