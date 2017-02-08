@@ -25,9 +25,8 @@
     * Added unit tests for the three bullet points above, modified other
     unit tests to work with this format. Deleted one redundant unit test.
 
-## To dos (add as issues when back online):
-* Add steps from urbansim_defaults pro forma function (in utils.py) to
-the core lookup function
-* Add `lookup_from_cfg` method to SqftProForma, similar to `predict_from_cfg`
-from DCM
+## To dos:
+* Generalize residential_to_yearly
+* Move simple zoning to interior pro forma code
+* Move other configurations to pro forma attributes/configs
 
