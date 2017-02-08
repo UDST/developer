@@ -47,6 +47,14 @@ def test_sqftproforma_config_defaults():
     sqpf.SqFtProForma.from_defaults()
 
 
+def test_sqftproforma_to_dict():
+    original_config = sqpf.SqFtProForma.get_defaults()
+    pf = sqpf.SqFtProForma.from_defaults()
+    new_config = pf.to_dict
+
+    assert original_config == new_config
+
+
 def test_sqftproforma_defaults(simple_dev_inputs):
     pf = sqpf.SqFtProForma.from_defaults()
 

@@ -305,6 +305,76 @@ class SqFtProForma(object):
         logger.debug('loaded SqftProForma model from default values')
         return model
 
+    @property
+    def to_dict(self):
+        """
+        Return a dict representation of a SqftProForma instance.
+
+        """
+
+        unconverted_attributes = ['parcel_sizes', 'uses',
+                                  'residential_uses', 'profit_factor',
+                                  'building_efficiency', 'parcel_coverage',
+                                  'cap_rate', 'sqft_per_rate',
+                                  'parking_configs', 'heights_for_costs',
+                                  'parking_sqft_d', 'parking_cost_d',
+                                  'height_per_story', 'max_retail_height',
+                                  'max_industrial_height']
+
+        results = {}
+        for attribute in unconverted_attributes:
+            results[attribute] = self.__dict__[attribute]
+
+        # Un-convert certain attributes from _convert_types() method
+
+        results['fars'] = self.fars.tolist()
+
+        parking_rates = {}
+        for index, use in enumerate(self.uses):
+            rate_for_use = self.parking_rates[index]
+            parking_rates[use] = float(rate_for_use)
+        results['parking_rates'] = parking_rates
+
+        forms = {}
+        for form_name, form_array in self.forms.items():
+            form_dict = {}
+            for index, use in enumerate(self.uses):
+                use_percentage = form_array[index]
+                if use_percentage != 0:
+                    form_dict[use] = float(form_array[index])
+            forms[form_name] = form_dict
+        results['forms'] = forms
+
+        costs = {}
+        costs_transposed = self.costs.transpose()
+        for index, use in enumerate(self.uses):
+            values = costs_transposed[index]
+            costs[use] = values.tolist()
+        results['costs'] = costs
+
+        return results
+
+    def to_yaml(self, str_or_buffer=None):
+        """
+        Save a model representation to YAML.
+
+        Parameters
+        ----------
+        str_or_buffer : str or file like, optional
+            By default a YAML string is returned. If a string is
+            given here the YAML will be written to that file.
+            If an object with a ``.write`` method is given the
+            YAML will be written to that object.
+
+        Returns
+        -------
+        j : str
+            YAML is string if `str_or_buffer` is not given.
+
+        """
+        logger.debug('serializing SqftProForma model to YAML')
+        return utils.convert_to_yaml(self.to_dict, str_or_buffer)
+
     def _building_cost(self, use_mix, stories):
         """
         Generate building cost for a set of buildings
@@ -330,7 +400,8 @@ class SqFtProForma(object):
         # this will get set to nan later
         costs[np.isnan(heights)] = 0
         # compute cost with matrix multiply
-        costs = np.dot(np.squeeze(self.costs[costs.astype('int32')]), use_mix)
+        costs = np.dot(np.squeeze(self.costs[costs.astype('int32')]),
+                       use_mix)
         # some heights aren't allowed - cost should be nan
         costs[np.isnan(stories).flatten()] = np.nan
         return costs.flatten()
@@ -564,12 +635,14 @@ class SqFtProForma(object):
             values="max_profit").idxmax(axis=1).to_frame("parking_config")
 
         df.set_index(["parking_config"], append=True, inplace=True)
-        max_profit_ind.set_index(["parking_config"], append=True, inplace=True)
+        max_profit_ind.set_index(["parking_config"], append=True,
+                                 inplace=True)
 
         # get the max_profit idx
         return df.loc[max_profit_ind.index].reset_index(1)
 
-    def _lookup_parking_cfg(self, form, parking_config, df, only_built=True,
+    def _lookup_parking_cfg(self, form, parking_config, df,
+                            only_built=True,
                             pass_through=None):
 
         dev_info = self.dev_d[(form, parking_config)]
@@ -588,8 +661,9 @@ class SqFtProForma(object):
         df['weighted_rent'] = np.dot(df[self.uses], self.forms[form])
 
         # min between max_fars and max_heights
-        df['max_far_from_heights'] = df.max_height / self.height_per_story * \
-                                     self.parcel_coverage
+        df['max_far_from_heights'] = (df.max_height /
+                                      self.height_per_story *
+                                      self.parcel_coverage)
 
         resratio = self.res_ratios[form]
         nonresratio = 1.0 - resratio
@@ -629,7 +703,8 @@ class SqFtProForma(object):
             df['min_max_fars'] = df[['max_far_from_heights', 'max_far',
                                      'max_far_from_dua']].min(axis=1)
         else:
-            df['min_max_fars'] = df[['max_far_from_heights', 'max_far']].min(
+            df['min_max_fars'] = df[
+                ['max_far_from_heights', 'max_far']].min(
                 axis=1)
 
         if only_built:
@@ -658,8 +733,11 @@ class SqFtProForma(object):
         total_costs = building_costs + df.land_cost.values
 
         # rent to make for the new building
-        building_revenue = building_bulks * (1 - parking_sqft_ratio) * \
-                           self.building_efficiency * df.weighted_rent.values / self.cap_rate
+        building_revenue = (building_bulks *
+                            (1 - parking_sqft_ratio) *
+                            self.building_efficiency *
+                            df.weighted_rent.values /
+                            self.cap_rate)
 
         # profit for each form
         profit = building_revenue - total_costs
@@ -675,7 +753,8 @@ class SqFtProForma(object):
             'building_sqft': twod_get(maxprofitind, building_bulks),
             'building_cost': twod_get(maxprofitind, building_costs),
             'parking_ratio': parking_sqft_ratio[maxprofitind].flatten(),
-            'stories': twod_get(maxprofitind, heights) / self.height_per_story,
+            'stories': twod_get(maxprofitind,
+                                heights) / self.height_per_story,
             'total_cost': twod_get(maxprofitind, total_costs),
             'building_revenue': twod_get(maxprofitind, building_revenue),
             'max_profit_far': twod_get(maxprofitind, fars),
@@ -686,10 +765,12 @@ class SqFtProForma(object):
         if pass_through:
             outdf[pass_through] = df[pass_through]
 
-        outdf[
-            "residential_sqft"] = outdf.building_sqft * self.building_efficiency * resratio
-        outdf[
-            "non_residential_sqft"] = outdf.building_sqft * self.building_efficiency * nonresratio
+        outdf["residential_sqft"] = (outdf.building_sqft *
+                                     self.building_efficiency *
+                                     resratio)
+        outdf["non_residential_sqft"] = (outdf.building_sqft *
+                                         self.building_efficiency *
+                                         nonresratio)
 
         if only_built:
             outdf = outdf.query('max_profit > 0').copy()
@@ -737,7 +818,8 @@ class SqFtProForma(object):
             if share is None:
                 share = plt.subplot(len(keys) / 2, 2, cnt)
             else:
-                plt.subplot(len(keys) / 2, 2, cnt, sharex=share, sharey=share)
+                plt.subplot(len(keys) / 2, 2, cnt, sharex=share,
+                            sharey=share)
 
             handles = plt.plot(far, sumdf)
             plt.ylabel('even_rent')
