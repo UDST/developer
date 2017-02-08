@@ -55,6 +55,26 @@ def test_sqftproforma_to_dict():
     assert original_config == new_config
 
 
+def test_sqftproforma_to_yaml():
+    if os.path.exists('test_sqftproforma_config.yaml'):
+        os.remove('test_sqftproforma_config.yaml')
+
+    pf = sqpf.SqFtProForma.from_defaults()
+    with open('test_sqftproforma_config.yaml', 'wb') as yaml_file:
+        pf.to_yaml(yaml_file)
+        yaml_string = pf.to_yaml()
+
+    pf_from_yaml_file = sqpf.SqFtProForma.from_yaml(
+        str_or_buffer='test_sqftproforma_config.yaml')
+    assert pf.to_dict == pf_from_yaml_file.to_dict
+
+    pf_from_yaml_string = sqpf.SqFtProForma.from_yaml(
+        yaml_str=yaml_string)
+    assert pf.to_dict == pf_from_yaml_string.to_dict
+
+    os.remove('test_sqftproforma_config.yaml')
+
+
 def test_sqftproforma_defaults(simple_dev_inputs):
     pf = sqpf.SqFtProForma.from_defaults()
 
