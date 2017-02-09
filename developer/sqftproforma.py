@@ -357,7 +357,9 @@ class SqFtProForma(object):
                                   'parking_configs', 'heights_for_costs',
                                   'parking_sqft_d', 'parking_cost_d',
                                   'height_per_story', 'max_retail_height',
-                                  'max_industrial_height']
+                                  'max_industrial_height',  'residential_to_yearly',
+                                  'parcel_filter', 'only_built', 'forms_to_test',
+                                  'pass_through', 'simple_zoning']
 
         results = {}
         for attribute in unconverted_attributes:
@@ -583,7 +585,7 @@ class SqFtProForma(object):
         """
         return self.dev_d[(form, parking_config)].ave_cost_sqft
 
-    def lookup(self, form, df, only_built=True, pass_through=None):
+    def lookup(self, form, df):
         """
         This function does the developer model lookups for all the actual input data.
 
@@ -594,16 +596,6 @@ class SqFtProForma(object):
         df: dataframe
             Pass in a single data frame which is indexed by parcel_id and has the
             following columns
-        only_built : bool
-            Whether to return only those buildings that are profitable and allowed
-            by zoning, or whether to return as much information as possible, even if
-            unlikely to be built (can be used when development might be subsidized
-            or when debugging)
-        pass_through : list of strings
-            List of field names to take from the input parcel frame and pass
-            to the output feasibility frame - is usually used for debugging
-            purposes - these fields will be passed all the way through
-            developer
 
         Input Dataframe Columns
         rent : dataframe
@@ -660,9 +652,19 @@ class SqFtProForma(object):
             and max_height from the input dataframe).
 
         """
+
+        if self.simple_zoning:
+            if form == "residential":
+                # these are new computed in the effective max_dua method
+                df["max_far"] = pd.Series()
+                df["max_height"] = pd.Series()
+            else:
+                # these are new computed in the effective max_far method
+                df["max_dua"] = pd.Series()
+                df["max_height"] = pd.Series()
+
         df = pd.concat(
-            self._lookup_parking_cfg(form, parking_config, df, only_built,
-                                     pass_through)
+            self._lookup_parking_cfg(form, parking_config, df)
             for parking_config in self.parking_configs)
 
         if len(df) == 0:
@@ -677,11 +679,14 @@ class SqFtProForma(object):
                                  inplace=True)
 
         # get the max_profit idx
-        return df.loc[max_profit_ind.index].reset_index(1)
+        result = df.loc[max_profit_ind.index].reset_index(1)
 
-    def _lookup_parking_cfg(self, form, parking_config, df,
-                            only_built=True,
-                            pass_through=None):
+        if self.residential_to_yearly and "residential" in self.pass_through:
+            result["residential"] /= self.cap_rate
+
+        return result
+
+    def _lookup_parking_cfg(self, form, parking_config, df):
 
         dev_info = self.dev_d[(form, parking_config)]
 
@@ -745,7 +750,7 @@ class SqFtProForma(object):
                 ['max_far_from_heights', 'max_far']].min(
                 axis=1)
 
-        if only_built:
+        if self.only_built:
             df = df.query('min_max_fars > 0 and parcel_size > 0')
 
         fars = np.repeat(cost_sqft_index_col, len(df.index), axis=1)
@@ -800,8 +805,8 @@ class SqFtProForma(object):
             'parking_config': parking_config
         }, index=df.index)
 
-        if pass_through:
-            outdf[pass_through] = df[pass_through]
+        if self.pass_through:
+            outdf[self.pass_through] = df[self.pass_through]
 
         outdf["residential_sqft"] = (outdf.building_sqft *
                                      self.building_efficiency *
@@ -810,7 +815,7 @@ class SqFtProForma(object):
                                          self.building_efficiency *
                                          nonresratio)
 
-        if only_built:
+        if self.only_built:
             outdf = outdf.query('max_profit > 0').copy()
         else:
             outdf = outdf.loc[outdf.max_profit != -np.inf].copy()
