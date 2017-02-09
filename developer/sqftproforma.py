@@ -140,7 +140,7 @@ class SqFtProForma(object):
         A filter to apply to the parcels data frame to remove parcels from
         consideration - is typically used to remove parcels with buildings
         older than a certain date for historical preservation, but is
-        generally useful ADD TO CONFIG
+        generally useful
 
     """
 
@@ -314,7 +314,14 @@ class SqFtProForma(object):
                 'profit_factor': 1.1,
                 'residential_uses': [False, False, False, True],
                 'sqft_per_rate': 1000.0,
-                'uses': ['retail', 'industrial', 'office', 'residential']}
+                'uses': ['retail', 'industrial', 'office', 'residential'],
+                'residential_to_yearly': True,
+                'parcel_filter': None,
+                'only_built': True,
+                'forms_to_test': None,
+                'pass_through': [],
+                'simple_zoning': False
+        }
 
     @classmethod
     def from_defaults(cls):
