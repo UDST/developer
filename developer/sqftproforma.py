@@ -175,7 +175,7 @@ class SqFtProForma(object):
         self.max_industrial_height = max_industrial_height
 
         self.residential_to_yearly = residential_to_yearly
-        self.forms_to_test = forms_to_test or self.forms.keys()
+        self.forms_to_test = forms_to_test or sorted(self.forms.keys())
         self.only_built = only_built
         self.pass_through = pass_through
         self.simple_zoning = simple_zoning
@@ -318,8 +318,8 @@ class SqFtProForma(object):
                 'residential_to_yearly': True,
                 'parcel_filter': None,
                 'only_built': True,
-                'forms_to_test': None,
-                'pass_through': [],
+                'forms_to_test': ['industrial', 'mixedoffice', 'mixedresidential', 'office', 'residential', 'retail'],
+                'pass_through': None,
                 'simple_zoning': False
         }
 
