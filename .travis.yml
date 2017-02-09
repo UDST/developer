@@ -19,7 +19,7 @@ install:
 - conda list
 - pip install .
 - pip install https://github.com/UDST/orca/archive/master.zip
-- pip install urbansim
+- pip install urbansim pandana
 - git clone -b developer git@github.com:urbansim/urbansim_parcels.git
 - pip install ./urbansim_parcels
 
