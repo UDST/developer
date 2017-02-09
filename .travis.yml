@@ -20,9 +20,8 @@ install:
 - pip install .
 - pip install https://github.com/UDST/orca/archive/master.zip
 - pip install urbansim
-
-before_script:
 - git clone -b developer git@github.com:urbansim/urbansim_parcels.git
+- pip install ./urbansim_parcels
 
 script:
 - py.test
