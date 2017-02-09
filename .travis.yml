@@ -22,9 +22,8 @@ install:
 - pip install urbansim
 
 before_script:
-- git clone git@github.com:urbansim/urbansim_parcels.git ~/urbansim_parcels
-- cd $TRAVIS_BUILD_DIR
+- git clone git@github.com:urbansim/urbansim_parcels.git
 
 script:
 - py.test
-- cd ~/urbansim_parcels/sf_example && python simulate.py
+- cd urbansim_parcels/sf_example; python simulate.py
