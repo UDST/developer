@@ -150,7 +150,7 @@ class SqFtProForma(object):
                  costs, heights_for_costs, parking_sqft_d, parking_cost_d,
                  height_per_story, max_retail_height, max_industrial_height,
                  residential_to_yearly=True, forms_to_test=None,
-                 only_built=True, pass_through=None, simple_zoning=False,
+                 only_built=True, pass_through=[], simple_zoning=False,
                  parcel_filter=None
                  ):
 
@@ -319,7 +319,7 @@ class SqFtProForma(object):
                 'parcel_filter': None,
                 'only_built': True,
                 'forms_to_test': ['industrial', 'mixedoffice', 'mixedresidential', 'office', 'residential', 'retail'],
-                'pass_through': None,
+                'pass_through': [],
                 'simple_zoning': False
         }
 

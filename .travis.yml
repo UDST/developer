@@ -18,11 +18,11 @@ install:
 - source activate test-environment
 - conda list
 - pip install .
-- git clone git@github.com:urbansim/urbansim_parcels.git ~/urbansim_parcels
 - pip install https://github.com/UDST/orca/archive/master.zip
 - pip install urbansim
 
 before_script:
+- git clone git@github.com:urbansim/urbansim_parcels.git ~/urbansim_parcels
 - cd $TRAVIS_BUILD_DIR
 
 script:
