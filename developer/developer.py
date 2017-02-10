@@ -1,5 +1,9 @@
 import pandas as pd
 import numpy as np
+import utils
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Developer(object):
@@ -57,6 +61,77 @@ class Developer(object):
         self.max_parcel_size = max_parcel_size
         self.drop_after_build = drop_after_build
         self.residential = residential
+
+    @classmethod
+    def from_yaml(cls, feasibility, form, yaml_str, str_or_buffer):
+        """
+        Parameters
+        ----------
+        feasibility : DataFrame Wrapper
+            The output from feasibility above (the table called 'feasibility')
+        form : string or list
+            One or more of the building forms from the pro forma specification -
+            e.g. "residential" or "mixedresidential" - these are configuration
+            parameters passed previously to the pro forma.  If more than one form
+            is passed the forms compete with each other (based on profitability)
+            for which one gets built in order to meet demand.
+        yaml_str : str, optional
+            A YAML string from which to load model.
+        str_or_buffer : str or file like, optional
+            File name or buffer from which to load YAML.
+
+        Returns
+        -------
+        Developer object
+        """
+        cfg = utils.yaml_to_dict(yaml_str, str_or_buffer)
+
+        model = cls(
+            feasibility, form, cfg['year'], cfg['bldg_sqft_per_job'],
+            cfg['min_unit_size'], cfg['max_parcel_size'],
+            cfg['drop_after_build'], cfg['residential']
+        )
+
+        logger.debug('loaded Developer model from YAML')
+        return model
+
+    @property
+    def to_dict(self):
+        """
+        Return a dict representation of a SqftProForma instance.
+
+        """
+
+        attributes = ['year', 'bldg_sqft_per_job',
+                      'min_unit_size', 'max_parcel_size',
+                      'drop_after_build', 'residential']
+
+        results = {}
+        for attribute in attributes:
+            results[attribute] = self.__dict__[attribute]
+
+        return results
+
+    def to_yaml(self, str_or_buffer=None):
+        """
+        Save a model representation to YAML.
+
+        Parameters
+        ----------
+        str_or_buffer : str or file like, optional
+            By default a YAML string is returned. If a string is
+            given here the YAML will be written to that file.
+            If an object with a ``.write`` method is given the
+            YAML will be written to that object.
+
+        Returns
+        -------
+        j : str
+            YAML is string if `str_or_buffer` is not given.
+
+        """
+        logger.debug('serializing Developer model to YAML')
+        return utils.convert_to_yaml(self.to_dict, str_or_buffer)
 
     @staticmethod
     def _max_form(f, colname):
