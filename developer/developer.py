@@ -150,9 +150,9 @@ class Developer(object):
 
         """
 
-        attributes = ['year', 'bldg_sqft_per_job',
-                      'min_unit_size', 'max_parcel_size',
-                      'drop_after_build', 'residential']
+        attributes = ['supply_fname', 'target_vacancy', 'bldg_sqft_per_job',
+                      'min_unit_size', 'max_parcel_size', 'drop_after_build',
+                      'residential', 'num_units_to_build']
 
         results = {}
         for attribute in attributes:
