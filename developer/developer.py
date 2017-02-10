@@ -105,7 +105,7 @@ class Developer(object):
 
     @classmethod
     def from_yaml(cls, form, agents, buildings, feasibility,
-                  parcel_size, ave_unit_size, current_units,
+                  parcel_size, ave_unit_size, current_units, year,
                   yaml_str=None, str_or_buffer=None):
         """
         Parameters
@@ -131,10 +131,13 @@ class Developer(object):
         cfg = utils.yaml_to_dict(yaml_str, str_or_buffer)
 
         model = cls(
-            form, agents, buildings, feasibility,
-            parcel_size, ave_unit_size, current_units, cfg['year'],
-            cfg['bldg_sqft_per_job'], cfg['min_unit_size'],
-            cfg['max_parcel_size'], cfg['drop_after_build'], cfg['residential']
+            feasibility, form, agents,
+            buildings, cfg['supply_fname'],
+            parcel_size, ave_unit_size, current_units, year,
+            cfg['target_vacancy'], cfg['bldg_sqft_per_job'],
+            cfg['min_unit_size'], cfg['max_parcel_size'],
+            cfg['drop_after_build'], cfg['residential'],
+            cfg['num_units_to_build']
         )
 
         logger.debug('loaded Developer model from YAML')
