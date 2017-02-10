@@ -20,10 +20,14 @@ def simple_dev_inputs():
         index=['a', 'b', 'c'])
 
 
-def test_developer(simple_dev_inputs):
+@pytest.fixture
+def feasibility(simple_dev_inputs):
     pf = sqpf.SqFtProForma.from_defaults()
     out = pf.lookup("residential", simple_dev_inputs)
-    feasibility = {'residential': out}
+    return {'residential': out}
+
+
+def test_developer(feasibility):
 
     parcel_size = pd.Series([1000, 1000, 1000], index=['a', 'b', 'c'])
     ave_unit_size = pd.Series([650, 650, 650], index=['a', 'b', 'c'])
@@ -52,10 +56,7 @@ def test_developer(simple_dev_inputs):
     assert bldgs is None
 
 
-def test_developer_dict_roundtrip(simple_dev_inputs):
-    pf = sqpf.SqFtProForma.from_defaults()
-    out = pf.lookup("residential", simple_dev_inputs)
-    feasibility = {'residential': out}
+def test_developer_dict_roundtrip(feasibility):
 
     parcel_size = pd.Series([1000, 1000, 1000], index=['a', 'b', 'c'])
     ave_unit_size = pd.Series([650, 650, 650], index=['a', 'b', 'c'])
@@ -71,14 +72,10 @@ def test_developer_dict_roundtrip(simple_dev_inputs):
     assert config1 == config2
 
 
-def test_developer_yaml_roundtrip(simple_dev_inputs):
+def test_developer_yaml_roundtrip(feasibility):
 
     if os.path.exists('test_dev_config.yaml'):
         os.remove('test_dev_config.yaml')
-
-    pf = sqpf.SqFtProForma.from_defaults()
-    out = pf.lookup("residential", simple_dev_inputs)
-    feasibility = {'residential': out}
 
     parcel_size = pd.Series([1000, 1000, 1000], index=['a', 'b', 'c'])
     ave_unit_size = pd.Series([650, 650, 650], index=['a', 'b', 'c'])
