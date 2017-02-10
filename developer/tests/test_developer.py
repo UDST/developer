@@ -27,40 +27,43 @@ def feasibility(simple_dev_inputs):
     return {'residential': out}
 
 
-def test_developer(feasibility):
-
+@pytest.fixture
+def pick_arguments():
     parcel_size = pd.Series([1000, 1000, 1000], index=['a', 'b', 'c'])
     ave_unit_size = pd.Series([650, 650, 650], index=['a', 'b', 'c'])
     current_units = pd.Series([0, 0, 0], index=['a', 'b', 'c'])
+
+    return {'parcel_size': parcel_size,
+            'ave_unit_size': ave_unit_size,
+            'current_units': current_units}
+
+
+def test_developer(feasibility, pick_arguments):
 
     dev = developer.Developer(feasibility=feasibility,
                               form='residential')
 
     target_units = 10
-    bldgs = dev.pick(target_units, parcel_size, ave_unit_size, current_units)
+    bldgs = dev.pick(target_units, **pick_arguments)
     assert len(bldgs) == 1
 
     target_units = 1000
-    bldgs = dev.pick(target_units, parcel_size, ave_unit_size, current_units)
+    bldgs = dev.pick(target_units, **pick_arguments)
     assert len(bldgs) == 2
 
     dev = developer.Developer(feasibility=feasibility, form='residential',
                               residential=False)
 
     target_units = 2
-    bldgs = dev.pick(target_units, parcel_size, ave_unit_size, current_units)
+    bldgs = dev.pick(target_units, **pick_arguments)
     assert bldgs is None
 
     target_units = 2
-    bldgs = dev.pick(target_units, parcel_size, ave_unit_size, current_units)
+    bldgs = dev.pick(target_units, **pick_arguments)
     assert bldgs is None
 
 
 def test_developer_dict_roundtrip(feasibility):
-
-    parcel_size = pd.Series([1000, 1000, 1000], index=['a', 'b', 'c'])
-    ave_unit_size = pd.Series([650, 650, 650], index=['a', 'b', 'c'])
-    current_units = pd.Series([0, 0, 0], index=['a', 'b', 'c'])
 
     dev1 = developer.Developer(feasibility=feasibility, form='residential')
     config1 = dev1.to_dict
@@ -76,10 +79,6 @@ def test_developer_yaml_roundtrip(feasibility):
 
     if os.path.exists('test_dev_config.yaml'):
         os.remove('test_dev_config.yaml')
-
-    parcel_size = pd.Series([1000, 1000, 1000], index=['a', 'b', 'c'])
-    ave_unit_size = pd.Series([650, 650, 650], index=['a', 'b', 'c'])
-    current_units = pd.Series([0, 0, 0], index=['a', 'b', 'c'])
 
     dev = developer.Developer(feasibility=feasibility, form='residential')
     with open('test_dev_config.yaml', 'wb') as yaml_file:
