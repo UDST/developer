@@ -21,41 +21,41 @@ def simple_dev_inputs():
 
 def test_developer(simple_dev_inputs):
     pf = sqpf.SqFtProForma.from_defaults()
-
     out = pf.lookup("residential", simple_dev_inputs)
-    dev = developer.Developer({"residential": out})
-    target_units = 10
+    feasibility = {'residential': out}
+
     parcel_size = pd.Series([1000, 1000, 1000], index=['a', 'b', 'c'])
     ave_unit_size = pd.Series([650, 650, 650], index=['a', 'b', 'c'])
     current_units = pd.Series([0, 0, 0], index=['a', 'b', 'c'])
-    bldgs = dev.pick("residential", target_units, parcel_size, ave_unit_size,
-                     current_units)
+
+    dev = developer.Developer(feasibility=feasibility,
+                              form='residential')
+
+    target_units = 10
+    bldgs = dev.pick(target_units, parcel_size, ave_unit_size, current_units)
     assert len(bldgs) == 1
 
-    # bldgs = dev.pick(["residential", "office"], target_units,
-    #                 parcel_size, ave_unit_size, current_units)
-    # assert len(bldgs) == 1
-
     target_units = 1000
-    bldgs = dev.pick("residential", target_units, parcel_size, ave_unit_size,
-                     current_units)
+    bldgs = dev.pick(target_units, parcel_size, ave_unit_size, current_units)
     assert len(bldgs) == 2
 
+    dev = developer.Developer(feasibility=feasibility, form='residential',
+                              residential=False)
+
     target_units = 2
-    bldgs = dev.pick("residential", target_units, parcel_size, ave_unit_size,
-                     current_units, residential=False)
+    bldgs = dev.pick(target_units, parcel_size, ave_unit_size, current_units)
     assert bldgs is None
 
     target_units = 2
-    bldgs = dev.pick("residential", target_units, parcel_size, ave_unit_size,
-                     current_units, residential=False)
+    bldgs = dev.pick(target_units, parcel_size, ave_unit_size, current_units)
     assert bldgs is None
 
 
 def test_developer_compute_units_to_build(simple_dev_inputs):
     pf = sqpf.SqFtProForma.from_defaults()
     out = pf.lookup("residential", simple_dev_inputs)
-    dev = developer.Developer({"residential": out})
+    feasibility = {'residential': out}
+    dev = developer.Developer(feasibility, 'residential')
     to_build = dev.compute_units_to_build(30, 30, .1)
     assert int(to_build) == 3
 
@@ -63,7 +63,8 @@ def test_developer_compute_units_to_build(simple_dev_inputs):
 def test_developer_compute_forms_max_profit(simple_dev_inputs):
     pf = sqpf.SqFtProForma.from_defaults()
     out = pf.lookup("residential", simple_dev_inputs)
-    dev = developer.Developer({"residential": out})
+    feasibility = {'residential': out}
+    dev = developer.Developer(feasibility, 'residential')
     dev.keep_form_with_max_profit()
 
 
