@@ -23,9 +23,30 @@ class Developer(object):
         parameters passed previously to the pro forma.  If more than one form
         is passed the forms compete with each other (based on profitability)
         for which one gets built in order to meet demand.
+    agents : DataFrame Wrapper
+        Used to compute the current demand for units/floorspace in the area
+    buildings : DataFrame Wrapper
+        Used to compute the current supply of units/floorspace in the area
+    supply_fname : string
+        Identifies the column in buildings which indicates the supply of
+        units/floorspace
+    parcel_size : series
+        The size of the parcels.  This was passed to feasibility as well,
+        but should be passed here as well.  Index should be parcel_ids.
+    ave_unit_size : series
+        The average residential unit size around each parcel - this is
+        indexed by parcel, but is usually a disaggregated version of a
+        zonal or accessibility aggregation.
+    current_units : series
+        The current number of units on the parcel.  Is used to compute the
+        net number of units produced by the developer model.  Many times
+        the developer model is redeveloping units (demolishing them) and
+        is trying to meet a total number of net units produced.
     year : int
         The year of the simulation - will be assigned to 'year_built' on the
         new buildings
+    target_vacancy : float
+        The target vacancy rate - used to determine how much to build
     bldg_sqft_per_job : float (default 400.0)
         The average square feet per job for this building form.
     min_unit_size : float
@@ -42,39 +63,62 @@ class Developer(object):
     residential: bool
         If creating non-residential buildings set this to false and
         developer will fill in job_spaces rather than residential_units
+    num_units_to_build: optional, int
+        If num_units_to_build is passed, build this many units rather than
+        computing it internally by using the length of agents adn the sum of
+        the relevant supply columin - this trusts the caller to know how to
+        compute this.
     """
 
-    def __init__(self, feasibility, form, year=None,
-                 bldg_sqft_per_job=400.0, min_unit_size=400,
-                 max_parcel_size=2000000, drop_after_build=True,
-                 residential=True):
+    def __init__(self, feasibility, form, agents, buildings,
+                 supply_fname, parcel_size, ave_unit_size, current_units,
+                 year=None, target_vacancy=0.1, bldg_sqft_per_job=400.0,
+                 min_unit_size=400, max_parcel_size=2000000,
+                 drop_after_build=True, residential=True,
+                 num_units_to_build=None):
 
         if isinstance(feasibility, dict):
             feasibility = pd.concat(feasibility.values(),
                                     keys=feasibility.keys(), axis=1)
         self.feasibility = feasibility
-
-        self.year = year
         self.form = form
+        self.agents = agents
+        self.buildings = buildings
+        self.supply_fname = supply_fname
+        self.parcel_size = parcel_size
+        self.ave_unit_size = ave_unit_size
+        self.current_units = current_units
+        self.year = year
+        self.target_vacancy = target_vacancy
         self.bldg_sqft_per_job = bldg_sqft_per_job
         self.min_unit_size = min_unit_size
         self.max_parcel_size = max_parcel_size
         self.drop_after_build = drop_after_build
         self.residential = residential
+        self.num_units_to_build = num_units_to_build
+
+        self.target_units = (
+            self.num_units_to_build or
+            self.compute_units_to_build(len(agents),
+                                        buildings[supply_fname].sum(),
+                                        self.target_vacancy))
 
     @classmethod
-    def from_yaml(cls, feasibility, form, yaml_str=None, str_or_buffer=None):
+    def from_yaml(cls, form, agents, buildings, feasibility,
+                  parcel_size, ave_unit_size, current_units,
+                  yaml_str=None, str_or_buffer=None):
         """
         Parameters
         ----------
         feasibility : DataFrame Wrapper
             The output from feasibility above (the table called 'feasibility')
         form : string or list
-            One or more of the building forms from the pro forma specification -
-            e.g. "residential" or "mixedresidential" - these are configuration
-            parameters passed previously to the pro forma.  If more than one form
-            is passed the forms compete with each other (based on profitability)
-            for which one gets built in order to meet demand.
+            One or more of the building forms from the pro forma specification
+            - e.g. "residential" or "mixedresidential" - these are
+            configuration parameters passed previously to the pro forma.
+            If more than one form is passed the forms compete with each other
+            (based on profitability) for which one gets built in order to meet
+             demand.
         yaml_str : str, optional
             A YAML string from which to load model.
         str_or_buffer : str or file like, optional
@@ -87,9 +131,10 @@ class Developer(object):
         cfg = utils.yaml_to_dict(yaml_str, str_or_buffer)
 
         model = cls(
-            feasibility, form, cfg['year'], cfg['bldg_sqft_per_job'],
-            cfg['min_unit_size'], cfg['max_parcel_size'],
-            cfg['drop_after_build'], cfg['residential']
+            form, agents, buildings, feasibility,
+            parcel_size, ave_unit_size, current_units, cfg['year'],
+            cfg['bldg_sqft_per_job'], cfg['min_unit_size'],
+            cfg['max_parcel_size'], cfg['drop_after_build'], cfg['residential']
         )
 
         logger.debug('loaded Developer model from YAML')
@@ -136,8 +181,8 @@ class Developer(object):
     @staticmethod
     def _max_form(f, colname):
         """
-        Assumes dataframe with hierarchical columns with first index equal to the
-        use and second index equal to the attribute.
+        Assumes dataframe with hierarchical columns with first index equal to
+        the use and second index equal to the attribute.
 
         e.g. f.columns equal to::
 
@@ -154,7 +199,8 @@ class Developer(object):
                           max_profit_far
                           total_cost
         """
-        df = f.stack(level=0)[[colname]].stack().unstack(level=1).reset_index(level=1, drop=True)
+        df = f.stack(level=0)[[colname]].stack().unstack(level=1).reset_index(
+            level=1, drop=True)
         return df.idxmax(axis=1)
 
     def keep_form_with_max_profit(self, forms=None):
@@ -210,35 +256,23 @@ class Developer(object):
         print "Number of agents: {:,}".format(num_agents)
         print "Number of agent spaces: {:,}".format(int(num_units))
         assert target_vacancy < 1.0
-        target_units = int(max(num_agents / (1 - target_vacancy) - num_units, 0))
-        print "Current vacancy = {:.2f}".format(1 - num_agents / float(num_units))
-        print "Target vacancy = {:.2f}, target of new units = {:,}".\
-            format(target_vacancy, target_units)
+        target_units = int(max(num_agents /
+                               (1 - target_vacancy) -
+                               num_units, 0))
+        print "Current vacancy = {:.2f}".format(1 - num_agents /
+                                                float(num_units))
+        print "Target vacancy = {:.2f}, target of new units = {:,}".format(
+            target_vacancy,
+            target_units)
         return target_units
 
-    def pick(self, target_units, parcel_size, ave_unit_size, current_units,
-             profit_to_prob_func=None):
+    def pick(self, profit_to_prob_func=None):
         """
         Choose the buildings from the list that are feasible to build in
         order to match the specified demand.
 
         Parameters
         ----------
-        target_units : int
-            The number of units to build.  For non-residential buildings this
-            should be passed as the number of job spaces that need to be created.
-        parcel_size : series
-            The size of the parcels.  This was passed to feasibility as well,
-            but should be passed here as well.  Index should be parcel_ids.
-        ave_unit_size : series
-            The average residential unit size around each parcel - this is
-            indexed by parcel, but is usually a disaggregated version of a
-            zonal or accessibility aggregation.
-        current_units : series
-            The current number of units on the parcel.  Is used to compute the
-            net number of units produced by the developer model.  Many times
-            the developer model is redeveloping units (demolishing them) and
-            is trying to meet a total number of net units produced.
         profit_to_prob_func: function
             As there are so many ways to turn the development feasibility
             into a probability to select it for building, the user may pass
@@ -267,10 +301,12 @@ class Developer(object):
 
         # feasible buildings only for this building type
         df = df[df.max_profit_far > 0]
-        ave_unit_size[ave_unit_size < self.min_unit_size] = self.min_unit_size
-        df["ave_unit_size"] = ave_unit_size
-        df["parcel_size"] = parcel_size
-        df['current_units'] = current_units
+        self.ave_unit_size[
+            self.ave_unit_size < self.min_unit_size
+        ] = self.min_unit_size
+        df["ave_unit_size"] = self.ave_unit_size
+        df["parcel_size"] = self.parcel_size
+        df['current_units'] = self.current_units
         df = df[df.parcel_size < self.max_parcel_size]
 
         df['residential_units'] = (df.residential_sqft /
@@ -298,11 +334,11 @@ class Developer(object):
             df['max_profit_per_size'] = df.max_profit / df.parcel_size
             p = df.max_profit_per_size.values / df.max_profit_per_size.sum()
 
-        if df.net_units.sum() < target_units:
+        if df.net_units.sum() < self.target_units:
             print "WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO " \
                   "MATCH DEMAND"
             build_idx = df.index.values
-        elif target_units <= 0:
+        elif self.target_units <= 0:
             build_idx = []
         else:
             # we don't know how many developments we will need, as they differ
@@ -310,10 +346,11 @@ class Developer(object):
             # need target_units of them. So we choose the smaller of available
             # developments and target_units.
             choices = np.random.choice(df.index.values,
-                                       size=min(len(df.index), target_units),
+                                       size=min(len(df.index),
+                                                self.target_units),
                                        replace=False, p=p)
             tot_units = df.net_units.loc[choices].values.cumsum()
-            ind = int(np.searchsorted(tot_units, target_units,
+            ind = int(np.searchsorted(tot_units, self.target_units,
                                       side="left")) + 1
             build_idx = choices[:ind]
 
@@ -322,6 +359,16 @@ class Developer(object):
 
         new_df = df.loc[build_idx]
         new_df.index.name = "parcel_id"
+
+        if self.year is not None:
+            new_df["year_built"] = self.year
+
+        if not isinstance(self.form, list):
+            # form gets set only if forms is a list
+            new_df["form"] = self.form
+
+        new_df["stories"] = new_df.stories.apply(np.ceil)
+
         return new_df.reset_index()
 
     # TODO Move this into parcel model
