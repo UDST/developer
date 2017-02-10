@@ -75,7 +75,8 @@ class Developer(object):
                  year=None, target_vacancy=0.1, bldg_sqft_per_job=400.0,
                  min_unit_size=400, max_parcel_size=2000000,
                  drop_after_build=True, residential=True,
-                 num_units_to_build=None):
+                 num_units_to_build=None, remove_developed_buildings=True,
+                 unplace_agents=['households', 'jobs']):
 
         if isinstance(feasibility, dict):
             feasibility = pd.concat(feasibility.values(),
@@ -96,6 +97,8 @@ class Developer(object):
         self.drop_after_build = drop_after_build
         self.residential = residential
         self.num_units_to_build = num_units_to_build
+        self.remove_developed_buildings = remove_developed_buildings
+        self.unplace_agents = unplace_agents
 
         self.target_units = (
             self.num_units_to_build or
@@ -137,7 +140,8 @@ class Developer(object):
             cfg['target_vacancy'], cfg['bldg_sqft_per_job'],
             cfg['min_unit_size'], cfg['max_parcel_size'],
             cfg['drop_after_build'], cfg['residential'],
-            cfg['num_units_to_build']
+            cfg['num_units_to_build'], cfg['remove_developed_buildings'],
+            cfg['unplace_agents']
         )
 
         logger.debug('loaded Developer model from YAML')
@@ -152,7 +156,8 @@ class Developer(object):
 
         attributes = ['supply_fname', 'target_vacancy', 'bldg_sqft_per_job',
                       'min_unit_size', 'max_parcel_size', 'drop_after_build',
-                      'residential', 'num_units_to_build']
+                      'residential', 'num_units_to_build',
+                      'remove_developed_buildings', 'unplace_agents']
 
         results = {}
         for attribute in attributes:
