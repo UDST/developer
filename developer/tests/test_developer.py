@@ -28,7 +28,7 @@ def feasibility(simple_dev_inputs):
 
 
 @pytest.fixture
-def pick_arguments():
+def parcel_default_args():
     parcel_size = pd.Series([1000, 1000, 1000], index=['a', 'b', 'c'])
     ave_unit_size = pd.Series([650, 650, 650], index=['a', 'b', 'c'])
     current_units = pd.Series([0, 0, 0], index=['a', 'b', 'c'])
@@ -38,28 +38,28 @@ def pick_arguments():
             'current_units': current_units}
 
 
-def test_developer(feasibility, pick_arguments):
+def test_developer(feasibility, parcel_default_args):
 
     dev = developer.Developer(feasibility=feasibility,
                               form='residential')
 
     target_units = 10
-    bldgs = dev.pick(target_units, **pick_arguments)
+    bldgs = dev.pick(target_units, **parcel_default_args)
     assert len(bldgs) == 1
 
     target_units = 1000
-    bldgs = dev.pick(target_units, **pick_arguments)
+    bldgs = dev.pick(target_units, **parcel_default_args)
     assert len(bldgs) == 2
 
     dev = developer.Developer(feasibility=feasibility, form='residential',
                               residential=False)
 
     target_units = 2
-    bldgs = dev.pick(target_units, **pick_arguments)
+    bldgs = dev.pick(target_units, **parcel_default_args)
     assert bldgs is None
 
     target_units = 2
-    bldgs = dev.pick(target_units, **pick_arguments)
+    bldgs = dev.pick(target_units, **parcel_default_args)
     assert bldgs is None
 
 
