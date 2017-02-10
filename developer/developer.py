@@ -63,7 +63,7 @@ class Developer(object):
         self.residential = residential
 
     @classmethod
-    def from_yaml(cls, feasibility, form, yaml_str, str_or_buffer):
+    def from_yaml(cls, feasibility, form, yaml_str=None, str_or_buffer=None):
         """
         Parameters
         ----------

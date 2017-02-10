@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+import os
 
 from .. import sqftproforma as sqpf
 from .. import developer
@@ -49,6 +50,58 @@ def test_developer(simple_dev_inputs):
     target_units = 2
     bldgs = dev.pick(target_units, parcel_size, ave_unit_size, current_units)
     assert bldgs is None
+
+
+def test_developer_dict_roundtrip(simple_dev_inputs):
+    pf = sqpf.SqFtProForma.from_defaults()
+    out = pf.lookup("residential", simple_dev_inputs)
+    feasibility = {'residential': out}
+
+    parcel_size = pd.Series([1000, 1000, 1000], index=['a', 'b', 'c'])
+    ave_unit_size = pd.Series([650, 650, 650], index=['a', 'b', 'c'])
+    current_units = pd.Series([0, 0, 0], index=['a', 'b', 'c'])
+
+    dev1 = developer.Developer(feasibility=feasibility, form='residential')
+    config1 = dev1.to_dict
+
+    dev2 = developer.Developer(feasibility=feasibility, form='residential',
+                               **config1)
+    config2 = dev2.to_dict
+
+    assert config1 == config2
+
+
+def test_developer_yaml_roundtrip(simple_dev_inputs):
+
+    if os.path.exists('test_dev_config.yaml'):
+        os.remove('test_dev_config.yaml')
+
+    pf = sqpf.SqFtProForma.from_defaults()
+    out = pf.lookup("residential", simple_dev_inputs)
+    feasibility = {'residential': out}
+
+    parcel_size = pd.Series([1000, 1000, 1000], index=['a', 'b', 'c'])
+    ave_unit_size = pd.Series([650, 650, 650], index=['a', 'b', 'c'])
+    current_units = pd.Series([0, 0, 0], index=['a', 'b', 'c'])
+
+    dev = developer.Developer(feasibility=feasibility, form='residential')
+    with open('test_dev_config.yaml', 'wb') as yaml_file:
+        dev.to_yaml(yaml_file)
+        yaml_string = dev.to_yaml()
+
+    dev_from_yaml_file = developer.Developer.from_yaml(
+        feasibility=feasibility,
+        form='residential',
+        str_or_buffer='test_dev_config.yaml')
+    assert dev.to_dict == dev_from_yaml_file.to_dict
+
+    dev_from_yaml_string = developer.Developer.from_yaml(
+        feasibility=feasibility,
+        form='residential',
+        yaml_str=yaml_string)
+    assert dev.to_dict == dev_from_yaml_string.to_dict
+
+    os.remove('test_dev_config.yaml')
 
 
 def test_developer_compute_units_to_build(simple_dev_inputs):
