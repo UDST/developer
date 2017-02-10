@@ -107,9 +107,9 @@ class Developer(object):
                                         self.target_vacancy))
 
     @classmethod
-    def from_yaml(cls, form, agents, buildings, feasibility,
-                  parcel_size, ave_unit_size, current_units, year,
-                  yaml_str=None, str_or_buffer=None):
+    def from_yaml(cls, feasibility, form, agents, buildings,
+                  supply_fname, parcel_size, ave_unit_size, current_units,
+                  year=None, yaml_str=None, str_or_buffer=None):
         """
         Parameters
         ----------
@@ -264,9 +264,8 @@ class Developer(object):
         print "Number of agents: {:,}".format(num_agents)
         print "Number of agent spaces: {:,}".format(int(num_units))
         assert target_vacancy < 1.0
-        target_units = int(max(num_agents /
-                               (1 - target_vacancy) -
-                               num_units, 0))
+        target_units = int(max(
+            (num_agents / (1 - target_vacancy) - num_units), 0))
         print "Current vacancy = {:.2f}".format(1 - num_agents /
                                                 float(num_units))
         print "Target vacancy = {:.2f}, target of new units = {:,}".format(
