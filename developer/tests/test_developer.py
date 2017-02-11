@@ -124,6 +124,8 @@ def test_developer_yaml_roundtrip(res_10):
         dev.to_yaml(yaml_file)
         yaml_string = dev.to_yaml()
 
+    res_10.pop('supply_fname', None)
+
     dev_from_yaml_file = developer.Developer.from_yaml(
         str_or_buffer='test_dev_config.yaml', **res_10)
     assert dev.to_dict == dev_from_yaml_file.to_dict
