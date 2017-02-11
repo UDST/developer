@@ -108,7 +108,7 @@ class Developer(object):
 
     @classmethod
     def from_yaml(cls, feasibility, form, agents, buildings,
-                  supply_fname, parcel_size, ave_unit_size, current_units,
+                  parcel_size, ave_unit_size, current_units,
                   year=None, yaml_str=None, str_or_buffer=None):
         """
         Parameters
