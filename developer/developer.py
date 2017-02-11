@@ -15,8 +15,8 @@ class Developer(object):
 
     Parameters
     ----------
-    feasibility : DataFrame Wrapper
-        The output from feasibility above (the table called 'feasibility')
+    feasibility : DataFrame or dict
+        Results from SqftProForma lookup method
     form : string or list
         One or more of the building forms from the pro forma specification -
         e.g. "residential" or "mixedresidential" - these are configuration
@@ -68,6 +68,13 @@ class Developer(object):
         computing it internally by using the length of agents adn the sum of
         the relevant supply columin - this trusts the caller to know how to
         compute this.
+    remove_developed_buildings : optional
+        Remove all buildings on the parcels which are being developed on
+    unplace_agents : list of strings
+        For all tables in the list, will look for field building_id and set
+        it to -1 for buildings which are removed - only executed if
+        remove_developed_buildings is true
+
     """
 
     def __init__(self, feasibility, form, agents, buildings,
@@ -113,15 +120,6 @@ class Developer(object):
         """
         Parameters
         ----------
-        feasibility : DataFrame Wrapper
-            The output from feasibility above (the table called 'feasibility')
-        form : string or list
-            One or more of the building forms from the pro forma specification
-            - e.g. "residential" or "mixedresidential" - these are
-            configuration parameters passed previously to the pro forma.
-            If more than one form is passed the forms compete with each other
-            (based on profitability) for which one gets built in order to meet
-             demand.
         yaml_str : str, optional
             A YAML string from which to load model.
         str_or_buffer : str or file like, optional
