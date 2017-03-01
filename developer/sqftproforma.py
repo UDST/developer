@@ -720,42 +720,43 @@ class SqFtProFormaLookup(object):
 
     def lookup(self, form, df):
         """
-        This function does the developer model lookups for all the actual input data.
+        This function does the developer model lookups for all the actual input
+        data.
 
         Parameters
         ----------
         form : string
             One of the forms specified in the configuration file
         df: dataframe
-            Pass in a single data frame which is indexed by parcel_id and has the
-            following columns
+            Pass in a single data frame which is indexed by parcel_id and has
+            the following columns
 
         Input Dataframe Columns
         rent : dataframe
-            A set of columns, one for each of the uses passed in the configuration.
-            Values are yearly rents for that use.  Typical column names would be
-            "residential", "retail", "industrial" and "office"
+            A set of columns, one for each of the uses passed in the
+            configuration. Values are yearly rents for that use. Typical column
+            names would be "residential", "retail", "industrial" and "office"
         land_cost : series
-            A series representing the CURRENT yearly rent for each parcel.  Used to
-            compute acquisition costs for the parcel.
+            A series representing the CURRENT yearly rent for each parcel.
+            Used to compute acquisition costs for the parcel.
         parcel_size : series
             A series representing the parcel size for each parcel.
         max_far : series
             A series representing the maximum far allowed by zoning.  Buildings
             will not be built above these fars.
         max_height : series
-            A series representing the maxmium height allowed by zoning.  Buildings
-            will not be built above these heights.  Will pick between the min of
-            the far and height, will ignore on of them if one is nan, but will not
-            build if both are nan.
+            A series representing the maxmium height allowed by zoning.
+            Buildings will not be built above these heights.  Will pick between
+            the min of the far and height, will ignore on of them if one is
+            nan, but will not build if both are nan.
         max_dua : series, optional
-            A series representing the maximum dwelling units per acre allowed by
-            zoning.  If max_dua is passed, the average unit size should be passed
-            below to translate from dua to floor space.
+            A series representing the maximum dwelling units per acre allowed
+            by zoning.  If max_dua is passed, the average unit size should be
+            passed below to translate from dua to floor space.
         ave_unit_size : series, optional
-            This is required if max_dua is passed above, otherwise it is optional.
-            This is the same as the parameter to Developer.pick() (it should be the
-            same series).
+            This is required if max_dua is passed above, otherwise it is
+            optional. This is the same as the parameter to Developer.pick()
+            (it should be the same series).
 
         Returns
         -------
@@ -763,45 +764,61 @@ class SqFtProFormaLookup(object):
             parcel identifiers
         building_sqft : Series, float
             The number of square feet for the building to build.  Keep in mind
-            this includes parking and common space.  Will need a helpful function
-            to convert from gross square feet to actual usable square feet in
-            residential units.
+            this includes parking and common space.  Will need a helpful
+            function to convert from gross square feet to actual usable square
+            feet in residential units.
         building_cost : Series, float
             The cost of constructing the building as given by the
             ave_cost_per_sqft from the cost model (for this FAR) and the number
             of square feet.
         total_cost : Series, float
-            The cost of constructing the building plus the cost of acquisition of
-            the current parcel/building.
+            The cost of constructing the building plus the cost of acquisition
+            of the current parcel/building.
         building_revenue : Series, float
             The NPV of the revenue for the building to be built, which is the
             number of square feet times the yearly rent divided by the cap
             rate (with a few adjustment factors including building efficiency).
         max_profit_far : Series, float
-            The FAR of the maximum profit building (constrained by the max_far and
-            max_height from the input dataframe).
-        max_profit :
-            The profit for the maximum profit building (constrained by the max_far
+            The FAR of the maximum profit building (constrained by the max_far
             and max_height from the input dataframe).
-
+        max_profit :
+            The profit for the maximum profit building (constrained by the
+            max_far and max_height from the input dataframe).
         """
 
         if self.simple_zoning:
-            if form == "residential":
-                # these are new computed in the effective max_dua method
-                df["max_far"] = pd.Series()
-                df["max_height"] = pd.Series()
-            else:
-                # these are new computed in the effective max_far method
-                df["max_dua"] = pd.Series()
-                df["max_height"] = pd.Series()
+            df = self._simple_zoning(form, df)
 
-        df = pd.concat(
+        lookup = pd.concat(
             self._lookup_parking_cfg(form, parking_config, df)
             for parking_config in self.parking_configs)
 
-        if len(df) == 0:
+        if len(lookup) == 0:
             return pd.DataFrame()
+
+        result = self._max_profit(lookup)
+
+        if self.residential_to_yearly and "residential" in self.pass_through:
+            result["residential"] /= self.cap_rate
+
+        return result
+
+    @staticmethod
+    def _simple_zoning(form, df):
+
+        if form == "residential":
+            # these are new computed in the effective max_dua method
+            df["max_far"] = pd.Series()
+            df["max_height"] = pd.Series()
+        else:
+            # these are new computed in the effective max_far method
+            df["max_dua"] = pd.Series()
+            df["max_height"] = pd.Series()
+
+        return df
+
+    @staticmethod
+    def _max_profit(df):
 
         max_profit_ind = df.pivot(
             columns="parking_config",
@@ -814,9 +831,6 @@ class SqFtProFormaLookup(object):
         # get the max_profit idx
         result = df.loc[max_profit_ind.index].reset_index(1)
 
-        if self.residential_to_yearly and "residential" in self.pass_through:
-            result["residential"] /= self.cap_rate
-
         return result
 
     def _lookup_parking_cfg(self, form, parking_config, df):
@@ -825,7 +839,6 @@ class SqFtProFormaLookup(object):
 
         cost_sqft_col = np.reshape(dev_info.ave_cost_sqft.values, (-1, 1))
         cost_sqft_index_col = np.reshape(dev_info.index.values, (-1, 1))
-
         parking_sqft_ratio = np.reshape(dev_info.parking_sqft_ratio.values,
                                         (-1, 1))
         heights = np.reshape(dev_info.height.values, (-1, 1))
@@ -849,39 +862,8 @@ class SqFtProFormaLookup(object):
         # is converted to floorspace and everything just works (floor space
         # will get covered back to units in developer.pick() but we need to
         # test the profitability of the floorspace allowed by max_dua here.
-        if 'max_dua' in df.columns and resratio > 0:
-            # if max_dua is in the data frame, ave_unit_size must also be there
-            assert 'ave_unit_size' in df.columns
 
-            df['max_far_from_dua'] = (
-                # this is the max_dua times the parcel size in acres, which gives
-                # the number of units that are allowable on the parcel
-                df.max_dua * (df.parcel_size / 43560) *
-
-                # times by the average unit size which gives the square footage of
-                # those units
-                df.ave_unit_size /
-
-                # divided by the building efficiency which is a
-                # factor that indicates that the actual units are not the whole
-                # FAR of the building
-                self.building_efficiency /
-
-                # divided by the resratio which is a  factor that indicates that
-                # the actual units are not the only use of the building
-                resratio /
-
-                # divided by the parcel size again in order to get FAR.
-                # I recognize that parcel_size actually
-                # cancels here as it should, but the calc was hard to get right
-                # and it's just so much more transparent to have it in there twice
-                df.parcel_size)
-            df['min_max_fars'] = df[['max_far_from_heights', 'max_far',
-                                     'max_far_from_dua']].min(axis=1)
-        else:
-            df['min_max_fars'] = df[
-                ['max_far_from_heights', 'max_far']].min(
-                axis=1)
+        df['min_max_fars'] = self._min_from_zoning(df, resratio)
 
         if self.only_built:
             df = df.query('min_max_fars > 0 and parcel_size > 0')
@@ -954,3 +936,39 @@ class SqFtProFormaLookup(object):
             outdf = outdf.loc[outdf.max_profit != -np.inf].copy()
 
         return outdf
+
+    def _min_from_zoning(self, df, resratio):
+
+        if 'max_dua' in df.columns and resratio > 0:
+            # if max_dua is in the data frame, ave_unit_size must also be there
+            assert 'ave_unit_size' in df.columns
+
+            df['max_far_from_dua'] = (
+                # this is the max_dua times the parcel size in acres, which
+                # gives the number of units that are allowable on the parcel
+                df.max_dua * (df.parcel_size / 43560) *
+
+                # times by the average unit size which gives the square footage
+                # of those units
+                df.ave_unit_size /
+
+                # divided by the building efficiency which is a
+                # factor that indicates that the actual units are not the whole
+                # FAR of the building
+                self.building_efficiency /
+
+                # divided by the resratio which is a  factor that indicates
+                # that the actual units are not the only use of the building
+                resratio /
+
+                # divided by the parcel size again in order to get FAR.
+                # I recognize that parcel_size actually
+                # cancels here as it should, but the calc was hard to get right
+                # and it's just so much more transparent to have it in there
+                # twice
+                df.parcel_size)
+            return df[['max_far_from_heights',
+                       'max_far', 'max_far_from_dua']].min(axis=1)
+        else:
+            return df[
+                ['max_far_from_heights', 'max_far']].min(axis=1)
