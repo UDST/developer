@@ -830,80 +830,84 @@ class SqFtProFormaReference(object):
 
             for parking_config in self.parking_configs:
 
-                # going to make a dataframe to store values to make
-                # pro forma results transparent
-                df = pd.DataFrame(index=self.fars)
-                df['far'] = self.fars
-                df['pclsz'] = self.tiled_parcel_sizes
-
-                building_bulk = np.reshape(
-                    self.parcel_sizes, (-1, 1)) * np.reshape(self.fars,
-                                                             (1, -1))
-                building_bulk = np.reshape(building_bulk, (-1, 1))
-
-                # need to converge in on exactly how much far is available for
-                # deck pkg
-                if parking_config == 'deck':
-                    building_bulk /= (
-                        1.0 + np.sum(uses_distrib * self.parking_rates) *
-                        self.parking_sqft_d[parking_config] /
-                        self.sqft_per_rate)
-
-                df['building_sqft'] = building_bulk
-
-                parkingstalls = building_bulk * \
-                                np.sum(
-                                    uses_distrib * self.parking_rates) / self.sqft_per_rate
-                parking_cost = (self.parking_cost_d[parking_config] *
-                                parkingstalls *
-                                self.parking_sqft_d[parking_config])
-
-                df['spaces'] = parkingstalls
-
-                if parking_config == 'underground':
-                    df['park_sqft'] = parkingstalls * \
-                                      self.parking_sqft_d[parking_config]
-                    stories = building_bulk / self.tiled_parcel_sizes
-                if parking_config == 'deck':
-                    df['park_sqft'] = parkingstalls * \
-                                      self.parking_sqft_d[parking_config]
-                    stories = ((building_bulk + parkingstalls *
-                                self.parking_sqft_d[parking_config]) /
-                               self.tiled_parcel_sizes)
-                if parking_config == 'surface':
-                    stories = building_bulk / \
-                              (self.tiled_parcel_sizes - parkingstalls *
-                               self.parking_sqft_d[parking_config])
-                    df['park_sqft'] = 0
-                    # not all fars support surface parking
-                    stories[stories < 0.0] = np.nan
-                    # I think we can assume that stories over 3
-                    # do not work with surface parking
-                    stories[stories > 5.0] = np.nan
-
-                df['total_built_sqft'] = df.building_sqft + df.park_sqft
-                df['parking_sqft_ratio'] = df.park_sqft / df.total_built_sqft
-                stories /= self.parcel_coverage
-                df['stories'] = np.ceil(stories)
-                df['height'] = df.stories * self.height_per_story
-                df['build_cost_sqft'] = self._building_cost(uses_distrib,
-                                                            stories)
-
-                df['build_cost'] = df.build_cost_sqft * df.building_sqft
-                df['park_cost'] = parking_cost
-                df['cost'] = df.build_cost + df.park_cost
-
-                df['ave_cost_sqft'] = (
-                                          df.cost / df.total_built_sqft) * self.profit_factor
-
-                if name == 'retail':
-                    df['ave_cost_sqft'][
-                        self.fars > self.max_retail_height] = np.nan
-                if name == 'industrial':
-                    df['ave_cost_sqft'][
-                        self.fars > self.max_industrial_height] = np.nan
-
+                df = self._lookup_dataframe(name, uses_distrib, parking_config)
                 df_d[(name, parking_config)] = df
 
         self.dev_d = df_d
 
+    def _lookup_dataframe(self, name, uses_distrib, parking_config):
+
+        # going to make a dataframe to store values to make
+        # pro forma results transparent
+        df = pd.DataFrame(index=self.fars)
+        df['far'] = self.fars
+        df['pclsz'] = self.tiled_parcel_sizes
+
+        building_bulk = np.reshape(
+            self.parcel_sizes, (-1, 1)) * np.reshape(self.fars,
+                                                     (1, -1))
+        building_bulk = np.reshape(building_bulk, (-1, 1))
+
+        # need to converge in on exactly how much far is available for
+        # deck pkg
+        if parking_config == 'deck':
+            building_bulk /= (
+                1.0 + np.sum(uses_distrib * self.parking_rates) *
+                self.parking_sqft_d[parking_config] /
+                self.sqft_per_rate)
+
+        df['building_sqft'] = building_bulk
+
+        parkingstalls = building_bulk * \
+                        np.sum(
+                            uses_distrib * self.parking_rates) / self.sqft_per_rate
+        parking_cost = (self.parking_cost_d[parking_config] *
+                        parkingstalls *
+                        self.parking_sqft_d[parking_config])
+
+        df['spaces'] = parkingstalls
+
+        if parking_config == 'underground':
+            df['park_sqft'] = parkingstalls * \
+                              self.parking_sqft_d[parking_config]
+            stories = building_bulk / self.tiled_parcel_sizes
+        if parking_config == 'deck':
+            df['park_sqft'] = parkingstalls * \
+                              self.parking_sqft_d[parking_config]
+            stories = ((building_bulk + parkingstalls *
+                        self.parking_sqft_d[parking_config]) /
+                       self.tiled_parcel_sizes)
+        if parking_config == 'surface':
+            stories = building_bulk / \
+                      (self.tiled_parcel_sizes - parkingstalls *
+                       self.parking_sqft_d[parking_config])
+            df['park_sqft'] = 0
+            # not all fars support surface parking
+            stories[stories < 0.0] = np.nan
+            # I think we can assume that stories over 3
+            # do not work with surface parking
+            stories[stories > 5.0] = np.nan
+
+        df['total_built_sqft'] = df.building_sqft + df.park_sqft
+        df['parking_sqft_ratio'] = df.park_sqft / df.total_built_sqft
+        stories /= self.parcel_coverage
+        df['stories'] = np.ceil(stories)
+        df['height'] = df.stories * self.height_per_story
+        df['build_cost_sqft'] = self._building_cost(uses_distrib,
+                                                    stories)
+
+        df['build_cost'] = df.build_cost_sqft * df.building_sqft
+        df['park_cost'] = parking_cost
+        df['cost'] = df.build_cost + df.park_cost
+
+        df['ave_cost_sqft'] = (
+                                  df.cost / df.total_built_sqft) * self.profit_factor
+
+        if name == 'retail':
+            df['ave_cost_sqft'][
+                self.fars > self.max_retail_height] = np.nan
+        if name == 'industrial':
+            df['ave_cost_sqft'][
+                self.fars > self.max_industrial_height] = np.nan
+
+        return df
