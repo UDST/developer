@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import logging
 import utils
+from utils import columnize
 
 logger = logging.getLogger(__name__)
 
@@ -608,8 +609,8 @@ class SqFtProFormaReference(object):
         self.max_retail_height = max_retail_height
         self.max_industrial_height = max_industrial_height
 
-        self.tiled_parcel_sizes = np.reshape(
-            np.repeat(self.parcel_sizes, self.fars.size), (-1, 1))
+        self.tiled_parcel_sizes = columnize(
+            np.repeat(self.parcel_sizes, self.fars.size))
 
         self._generate_reference()
 
@@ -719,11 +720,24 @@ class SqFtProFormaReference(object):
         return costs.flatten()
 
     def _building_bulk(self, uses_distrib, parking_config):
+        """
+        Multiplies parcel sizes by FARs, with adjustment for deck parking.
 
-        building_bulk = np.reshape(
-            self.parcel_sizes, (-1, 1)) * np.reshape(self.fars,
-                                                     (1, -1))
-        building_bulk = np.reshape(building_bulk, (-1, 1))
+        Parameters
+        ----------
+        uses_distrib : ndarray
+            The distribution of uses in this form
+        parking_config : str
+            Name of current parking configuration
+
+        Returns
+        -------
+        building_bulk : ndarray
+        """
+
+        building_bulk = (columnize(self.parcel_sizes) *
+                         columnize(self.fars))
+        building_bulk = columnize(building_bulk)
 
         # need to converge in on exactly how much far is available for
         # deck pkg
@@ -930,11 +944,10 @@ class SqFtProFormaLookup(object):
 
         dev_info = self.reference_dict[(form, parking_config)]
 
-        cost_sqft_col = np.reshape(dev_info.ave_cost_sqft.values, (-1, 1))
-        cost_sqft_index_col = np.reshape(dev_info.index.values, (-1, 1))
-        parking_sqft_ratio = np.reshape(dev_info.parking_sqft_ratio.values,
-                                        (-1, 1))
-        heights = np.reshape(dev_info.height.values, (-1, 1))
+        cost_sqft_col = columnize(dev_info.ave_cost_sqft.values)
+        cost_sqft_index_col = columnize(dev_info.index.values)
+        parking_sqft_ratio = columnize(dev_info.parking_sqft_ratio.values)
+        heights = columnize(dev_info.height.values)
 
         # don't really mean to edit the df that's passed in
         df = df.copy()
