@@ -151,7 +151,7 @@ class SqFtProForma(object):
                  costs, heights_for_costs, parking_sqft_d, parking_cost_d,
                  height_per_story, max_retail_height, max_industrial_height,
                  residential_to_yearly=True, forms_to_test=None,
-                 only_built=True, pass_through=[], simple_zoning=False,
+                 only_built=True, pass_through=None, simple_zoning=False,
                  parcel_filter=None
                  ):
 
@@ -178,7 +178,7 @@ class SqFtProForma(object):
         self.residential_to_yearly = residential_to_yearly
         self.forms_to_test = forms_to_test or sorted(self.forms.keys())
         self.only_built = only_built
-        self.pass_through = pass_through
+        self.pass_through = [] if pass_through is None else pass_through
         self.simple_zoning = simple_zoning
         self.parcel_filter = parcel_filter
 
@@ -324,16 +324,12 @@ class SqFtProForma(object):
                                   'residential', 'retail'],
                 'pass_through': [],
                 'simple_zoning': False
-        }
+                }
 
     @classmethod
     def from_defaults(cls):
         """
         Create a SqftProForma instance from default values.
-
-        Parameters
-        ----------
-        None
 
         Returns
         -------
