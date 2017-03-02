@@ -81,7 +81,7 @@ class SqFtProForma(object):
         are dollars PER SQUARE FOOT for parking in that configuration.
         Used to capture the fact that underground and deck are far more
         expensive than surface parking.
-    height_for_costs : list
+    heights_for_costs : list
         A list of "break points" as heights at which construction becomes
         more expensive.  Generally these are the heights at which
         construction materials change from wood, to concrete, to steel.
@@ -416,6 +416,72 @@ class SqFtProForma(object):
         return utils.convert_to_yaml(self.to_dict, str_or_buffer)
 
     def lookup(self, form, df):
+        """
+        This function does the developer model lookups for all the actual input
+        data.
+
+        Parameters
+        ----------
+        form : string
+            One of the forms specified in the configuration file
+        df: dataframe
+            Pass in a single data frame which is indexed by parcel_id and has
+            the following columns
+
+        Input Dataframe Columns
+        rent : dataframe
+            A set of columns, one for each of the uses passed in the
+            configuration. Values are yearly rents for that use. Typical column
+            names would be "residential", "retail", "industrial" and "office"
+        land_cost : series
+            A series representing the CURRENT yearly rent for each parcel.
+            Used to compute acquisition costs for the parcel.
+        parcel_size : series
+            A series representing the parcel size for each parcel.
+        max_far : series
+            A series representing the maximum far allowed by zoning.  Buildings
+            will not be built above these fars.
+        max_height : series
+            A series representing the maxmium height allowed by zoning.
+            Buildings will not be built above these heights.  Will pick between
+            the min of the far and height, will ignore on of them if one is
+            nan, but will not build if both are nan.
+        max_dua : series, optional
+            A series representing the maximum dwelling units per acre allowed
+            by zoning.  If max_dua is passed, the average unit size should be
+            passed below to translate from dua to floor space.
+        ave_unit_size : series, optional
+            This is required if max_dua is passed above, otherwise it is
+            optional. This is the same as the parameter to Developer.pick()
+            (it should be the same series).
+
+        Returns
+        -------
+        index : Series, int
+            parcel identifiers
+        building_sqft : Series, float
+            The number of square feet for the building to build.  Keep in mind
+            this includes parking and common space.  Will need a helpful
+            function to convert from gross square feet to actual usable square
+            feet in residential units.
+        building_cost : Series, float
+            The cost of constructing the building as given by the
+            ave_cost_per_sqft from the cost model (for this FAR) and the number
+            of square feet.
+        total_cost : Series, float
+            The cost of constructing the building plus the cost of acquisition
+            of the current parcel/building.
+        building_revenue : Series, float
+            The NPV of the revenue for the building to be built, which is the
+            number of square feet times the yearly rent divided by the cap
+            rate (with a few adjustment factors including building efficiency).
+        max_profit_far : Series, float
+            The FAR of the maximum profit building (constrained by the max_far
+            and max_height from the input dataframe).
+        max_profit :
+            The profit for the maximum profit building (constrained by the
+            max_far and max_height from the input dataframe).
+        """
 
         lookup_object = SqFtProFormaLookup(**self.__dict__)
         return lookup_object.lookup(form, df)
@@ -796,7 +862,7 @@ class SqFtProFormaLookup(object):
         if len(lookup) == 0:
             return pd.DataFrame()
 
-        result = self._max_profit(lookup)
+        result = self._max_profit_parking(lookup)
 
         if self.residential_to_yearly and "residential" in self.pass_through:
             result["residential"] /= self.cap_rate
@@ -805,6 +871,20 @@ class SqFtProFormaLookup(object):
 
     @staticmethod
     def _simple_zoning(form, df):
+        """
+        Replaces max_height and either max_far or max_dua with NaNs
+
+        Parameters
+        ----------
+        form : str
+            Name of form passed to lookup method
+        df : DataFrame
+            DataFrame passed to lookup method
+
+        Returns
+        -------
+        df : DataFrame
+        """
 
         if form == "residential":
             # these are new computed in the effective max_dua method
@@ -818,7 +898,20 @@ class SqFtProFormaLookup(object):
         return df
 
     @staticmethod
-    def _max_profit(df):
+    def _max_profit_parking(df):
+        """
+        Return parcels DataFrame with parking configuration that maximizes
+        profit
+
+        Parameters
+        ----------
+        df: DataFrame
+            DataFrame passed to lookup method
+
+        Returns
+        -------
+        result : DataFrame
+        """
 
         max_profit_ind = df.pivot(
             columns="parking_config",
