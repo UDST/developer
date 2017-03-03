@@ -1,5 +1,6 @@
 import yaml
 import os
+import numpy as np
 
 
 def ordered_yaml(cfg):
@@ -105,3 +106,21 @@ def yaml_to_dict(yaml_str=None, str_or_buffer=None):
         d = yaml.load(str_or_buffer)
 
     return d
+
+
+def columnize(iterable):
+    """
+    Reshapes an array or list into a column that can be multiplied
+
+    Parameters
+    ----------
+    iterable: array-like
+        The iterable to be reshaped into a column
+
+    Returns
+    -------
+    column : ndarray
+    """
+
+    column = np.reshape(iterable, (-1, 1))
+    return column
