@@ -965,7 +965,7 @@ class SqFtProFormaLookup(object):
         # will get covered back to units in developer.pick() but we need to
         # test the profitability of the floorspace allowed by max_dua here.
 
-        df['min_max_fars'] = self._min_from_zoning(df, resratio)
+        df['min_max_fars'] = self._min_max_fars(df, resratio)
 
         if self.only_built:
             df = df.query('min_max_fars > 0 and parcel_size > 0')
@@ -1039,7 +1039,7 @@ class SqFtProFormaLookup(object):
 
         return outdf
 
-    def _min_from_zoning(self, df, resratio):
+    def _min_max_fars(self, df, resratio):
 
         if 'max_dua' in df.columns and resratio > 0:
             # if max_dua is in the data frame, ave_unit_size must also be there
