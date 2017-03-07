@@ -79,8 +79,7 @@ class Developer(object):
 
     # TODO remove agents, buildings, supply_fname, target_vacancy
     # TODO remove remove_developed_buildings, unplace_agents
-    # TODO rename form forms
-    def __init__(self, feasibility, form, agents, buildings,
+    def __init__(self, feasibility, forms, agents, buildings,
                  supply_fname, parcel_size, ave_unit_size, current_units,
                  year=None, target_vacancy=0.1, bldg_sqft_per_job=400.0,
                  min_unit_size=400, max_parcel_size=2000000,
@@ -92,7 +91,7 @@ class Developer(object):
             feasibility = pd.concat(feasibility.values(),
                                     keys=feasibility.keys(), axis=1)
         self.feasibility = feasibility
-        self.form = form
+        self.forms = forms
         self.agents = agents
         self.buildings = buildings
         self.supply_fname = supply_fname
@@ -118,7 +117,7 @@ class Developer(object):
                                         self.target_vacancy))
 
     @classmethod
-    def from_yaml(cls, feasibility, form, agents, buildings,
+    def from_yaml(cls, feasibility, forms, agents, buildings,
                   parcel_size, ave_unit_size, current_units,
                   year=None, yaml_str=None, str_or_buffer=None):
         """
@@ -138,7 +137,7 @@ class Developer(object):
         # TODO remove agents, buildings, supply_fname, target_vacancy
         # TODO remove remove_developed_buildings, unplace_agents
         model = cls(
-            feasibility, form, agents,
+            feasibility, forms, agents,
             buildings, cfg['supply_fname'],
             parcel_size, ave_unit_size, current_units, year,
             cfg['target_vacancy'], cfg['bldg_sqft_per_job'],
@@ -307,12 +306,12 @@ class Developer(object):
             # no feasible buildings, might as well bail
             return
 
-        if self.form is None:
+        if self.forms is None:
             df = self.feasibility
-        elif isinstance(self.form, list):
-            df = self.keep_form_with_max_profit(self.form)
+        elif isinstance(self.forms, list):
+            df = self.keep_form_with_max_profit(self.forms)
         else:
-            df = self.feasibility[self.form]
+            df = self.feasibility[self.forms]
 
         # feasible buildings only for this building type
         df = df[df.max_profit_far > 0]
@@ -378,9 +377,9 @@ class Developer(object):
         if self.year is not None:
             new_df["year_built"] = self.year
 
-        if not isinstance(self.form, list):
+        if not isinstance(self.forms, list):
             # form gets set only if forms is a list
-            new_df["form"] = self.form
+            new_df["form"] = self.forms
 
         new_df["stories"] = new_df.stories.apply(np.ceil)
 
