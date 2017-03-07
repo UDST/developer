@@ -42,7 +42,7 @@ def base_args(feasibility):
 @pytest.fixture
 def res(base_args):
     args = base_args.copy()
-    args.update({'form': 'residential',
+    args.update({'forms': 'residential',
                  'supply_fname': 'residential_units'})
     return args
 
@@ -50,7 +50,7 @@ def res(base_args):
 @pytest.fixture
 def nonres(base_args):
     args = base_args.copy()
-    args.update({'form': 'office',
+    args.update({'forms': 'office',
                  'supply_fname': 'job_spaces'})
     return args
 
