@@ -77,6 +77,9 @@ class Developer(object):
 
     """
 
+    # TODO remove agents, buildings, supply_fname, target_vacancy
+    # TODO remove remove_developed_buildings, unplace_agents
+    # TODO rename form forms
     def __init__(self, feasibility, form, agents, buildings,
                  supply_fname, parcel_size, ave_unit_size, current_units,
                  year=None, target_vacancy=0.1, bldg_sqft_per_job=400.0,
@@ -107,6 +110,7 @@ class Developer(object):
         self.remove_developed_buildings = remove_developed_buildings
         self.unplace_agents = unplace_agents
 
+        # TODO just take in target units
         self.target_units = (
             self.num_units_to_build or
             self.compute_units_to_build(len(agents),
@@ -131,6 +135,8 @@ class Developer(object):
         """
         cfg = utils.yaml_to_dict(yaml_str, str_or_buffer)
 
+        # TODO remove agents, buildings, supply_fname, target_vacancy
+        # TODO remove remove_developed_buildings, unplace_agents
         model = cls(
             feasibility, form, agents,
             buildings, cfg['supply_fname'],
@@ -152,6 +158,8 @@ class Developer(object):
 
         """
 
+        # TODO remove supply_fname, target_vacancy
+        # TODO remove remove_developed_buildings, unplace_agents
         attributes = ['supply_fname', 'target_vacancy', 'bldg_sqft_per_job',
                       'min_unit_size', 'max_parcel_size', 'drop_after_build',
                       'residential', 'num_units_to_build',
@@ -240,6 +248,7 @@ class Developer(object):
         df = df.reset_index(level=1)
         return df
 
+    # TODO move to urbansim_parcels utils.py
     @staticmethod
     def compute_units_to_build(num_agents, num_units, target_vacancy):
         """
@@ -271,6 +280,7 @@ class Developer(object):
             target_units)
         return target_units
 
+    # TODO Add target_units to parameters
     def pick(self, profit_to_prob_func=None):
         """
         Choose the buildings from the list that are feasible to build in
