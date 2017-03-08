@@ -233,38 +233,6 @@ class Developer(object):
         df = df.reset_index(level=1)
         return df
 
-    # TODO move to urbansim_parcels utils.py
-    @staticmethod
-    def compute_units_to_build(num_agents, num_units, target_vacancy):
-        """
-        Compute number of units to build to match target vacancy.
-
-        Parameters
-        ----------
-        num_agents : int
-            number of agents that need units in the region
-        num_units : int
-            number of units in buildings
-        target_vacancy : float (0-1.0)
-            target vacancy rate
-
-        Returns
-        -------
-        number_of_units : int
-            the number of units that need to be built
-        """
-        print "Number of agents: {:,}".format(num_agents)
-        print "Number of agent spaces: {:,}".format(int(num_units))
-        assert target_vacancy < 1.0
-        target_units = int(max(
-            (num_agents / (1 - target_vacancy) - num_units), 0))
-        print "Current vacancy = {:.2f}".format(1 - num_agents /
-                                                float(num_units))
-        print "Target vacancy = {:.2f}, target of new units = {:,}".format(
-            target_vacancy,
-            target_units)
-        return target_units
-
     def pick(self, profit_to_prob_func=None):
         """
         Choose the buildings from the list that are feasible to build in
