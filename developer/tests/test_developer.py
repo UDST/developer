@@ -112,11 +112,3 @@ def test_developer_yaml_roundtrip(res10):
 def test_developer_compute_forms_max_profit(res10):
     dev = developer.Developer(**res10)
     dev.keep_form_with_max_profit()
-
-
-def test_developer_merge():
-    df1 = pd.DataFrame({'test': [1]}, index=[1])
-    df2 = pd.DataFrame({'test': [1]}, index=[1])
-    dev = developer.Developer.merge(df1, df2)
-    # make sure index is unique
-    assert dev.index.values[1] == 2
