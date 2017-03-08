@@ -109,12 +109,6 @@ def test_developer_yaml_roundtrip(res10):
     os.remove('test_dev_config.yaml')
 
 
-def test_developer_compute_units_to_build(res10):
-    dev = developer.Developer(**res10)
-    to_build = dev.compute_units_to_build(30, 30, .1)
-    assert int(to_build) == 3
-
-
 def test_developer_compute_forms_max_profit(res10):
     dev = developer.Developer(**res10)
     dev.keep_form_with_max_profit()
