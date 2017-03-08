@@ -17,19 +17,12 @@ class Developer(object):
     ----------
     feasibility : DataFrame or dict
         Results from SqftProForma lookup method
-    form : string or list
+    forms : string or list
         One or more of the building forms from the pro forma specification -
         e.g. "residential" or "mixedresidential" - these are configuration
         parameters passed previously to the pro forma.  If more than one form
         is passed the forms compete with each other (based on profitability)
         for which one gets built in order to meet demand.
-    agents : DataFrame Wrapper
-        Used to compute the current demand for units/floorspace in the area
-    buildings : DataFrame Wrapper
-        Used to compute the current supply of units/floorspace in the area
-    supply_fname : string
-        Identifies the column in buildings which indicates the supply of
-        units/floorspace
     parcel_size : series
         The size of the parcels.  This was passed to feasibility as well,
         but should be passed here as well.  Index should be parcel_ids.
@@ -45,8 +38,6 @@ class Developer(object):
     year : int
         The year of the simulation - will be assigned to 'year_built' on the
         new buildings
-    target_vacancy : float
-        The target vacancy rate - used to determine how much to build
     bldg_sqft_per_job : float (default 400.0)
         The average square feet per job for this building form.
     min_unit_size : float
