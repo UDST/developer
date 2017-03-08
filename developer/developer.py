@@ -59,23 +59,15 @@ class Developer(object):
         computing it internally by using the length of agents adn the sum of
         the relevant supply columin - this trusts the caller to know how to
         compute this.
-    remove_developed_buildings : optional
-        Remove all buildings on the parcels which are being developed on
-    unplace_agents : list of strings
-        For all tables in the list, will look for field building_id and set
-        it to -1 for buildings which are removed - only executed if
-        remove_developed_buildings is true
 
     """
 
-    # TODO remove remove_developed_buildings, unplace_agents
     def __init__(self, feasibility, forms, target_units,
                  parcel_size, ave_unit_size, current_units,
                  year=None, bldg_sqft_per_job=400.0,
                  min_unit_size=400, max_parcel_size=200000,
                  drop_after_build=True, residential=True,
-                 num_units_to_build=None, remove_developed_buildings=True,
-                 unplace_agents=['households', 'jobs']):
+                 num_units_to_build=None):
 
         if isinstance(feasibility, dict):
             feasibility = pd.concat(feasibility.values(),
@@ -93,8 +85,6 @@ class Developer(object):
         self.drop_after_build = drop_after_build
         self.residential = residential
         self.num_units_to_build = num_units_to_build
-        self.remove_developed_buildings = remove_developed_buildings
-        self.unplace_agents = unplace_agents
 
     @classmethod
     def from_yaml(cls, feasibility, forms, target_units,
@@ -114,15 +104,13 @@ class Developer(object):
         """
         cfg = utils.yaml_to_dict(yaml_str, str_or_buffer)
 
-        # TODO remove remove_developed_buildings, unplace_agents
         model = cls(
             feasibility, forms, target_units,
             parcel_size, ave_unit_size, current_units,
             year, cfg['bldg_sqft_per_job'],
             cfg['min_unit_size'], cfg['max_parcel_size'],
             cfg['drop_after_build'], cfg['residential'],
-            cfg['num_units_to_build'], cfg['remove_developed_buildings'],
-            cfg['unplace_agents']
+            cfg['num_units_to_build']
         )
 
         logger.debug('loaded Developer model from YAML')
@@ -134,12 +122,10 @@ class Developer(object):
         Return a dict representation of a SqftProForma instance.
 
         """
-        # TODO remove remove_developed_buildings, unplace_agents
         attributes = ['bldg_sqft_per_job',
                       'min_unit_size', 'max_parcel_size',
                       'drop_after_build', 'residential',
-                      'num_units_to_build', 'remove_developed_buildings',
-                      'unplace_agents']
+                      'num_units_to_build']
 
         results = {}
         for attribute in attributes:
