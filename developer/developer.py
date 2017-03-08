@@ -77,12 +77,11 @@ class Developer(object):
 
     """
 
-    # TODO remove agents, buildings, supply_fname, target_vacancy
     # TODO remove remove_developed_buildings, unplace_agents
-    def __init__(self, feasibility, forms, agents, buildings,
-                 supply_fname, parcel_size, ave_unit_size, current_units,
-                 year=None, target_vacancy=0.1, bldg_sqft_per_job=400.0,
-                 min_unit_size=400, max_parcel_size=2000000,
+    def __init__(self, feasibility, forms, target_units,
+                 parcel_size, ave_unit_size, current_units,
+                 year=None, bldg_sqft_per_job=400.0,
+                 min_unit_size=400, max_parcel_size=200000,
                  drop_after_build=True, residential=True,
                  num_units_to_build=None, remove_developed_buildings=True,
                  unplace_agents=['households', 'jobs']):
@@ -92,14 +91,11 @@ class Developer(object):
                                     keys=feasibility.keys(), axis=1)
         self.feasibility = feasibility
         self.forms = forms
-        self.agents = agents
-        self.buildings = buildings
-        self.supply_fname = supply_fname
+        self.target_units = target_units
         self.parcel_size = parcel_size
         self.ave_unit_size = ave_unit_size
         self.current_units = current_units
         self.year = year
-        self.target_vacancy = target_vacancy
         self.bldg_sqft_per_job = bldg_sqft_per_job
         self.min_unit_size = min_unit_size
         self.max_parcel_size = max_parcel_size
@@ -109,15 +105,8 @@ class Developer(object):
         self.remove_developed_buildings = remove_developed_buildings
         self.unplace_agents = unplace_agents
 
-        # TODO just take in target units
-        self.target_units = (
-            self.num_units_to_build or
-            self.compute_units_to_build(len(agents),
-                                        buildings[supply_fname].sum(),
-                                        self.target_vacancy))
-
     @classmethod
-    def from_yaml(cls, feasibility, forms, agents, buildings,
+    def from_yaml(cls, feasibility, forms, target_units,
                   parcel_size, ave_unit_size, current_units,
                   year=None, yaml_str=None, str_or_buffer=None):
         """
@@ -134,13 +123,11 @@ class Developer(object):
         """
         cfg = utils.yaml_to_dict(yaml_str, str_or_buffer)
 
-        # TODO remove agents, buildings, supply_fname, target_vacancy
         # TODO remove remove_developed_buildings, unplace_agents
         model = cls(
-            feasibility, forms, agents,
-            buildings, cfg['supply_fname'],
-            parcel_size, ave_unit_size, current_units, year,
-            cfg['target_vacancy'], cfg['bldg_sqft_per_job'],
+            feasibility, forms, target_units,
+            parcel_size, ave_unit_size, current_units,
+            year, cfg['bldg_sqft_per_job'],
             cfg['min_unit_size'], cfg['max_parcel_size'],
             cfg['drop_after_build'], cfg['residential'],
             cfg['num_units_to_build'], cfg['remove_developed_buildings'],
@@ -156,13 +143,12 @@ class Developer(object):
         Return a dict representation of a SqftProForma instance.
 
         """
-
-        # TODO remove supply_fname, target_vacancy
         # TODO remove remove_developed_buildings, unplace_agents
-        attributes = ['supply_fname', 'target_vacancy', 'bldg_sqft_per_job',
-                      'min_unit_size', 'max_parcel_size', 'drop_after_build',
-                      'residential', 'num_units_to_build',
-                      'remove_developed_buildings', 'unplace_agents']
+        attributes = ['bldg_sqft_per_job',
+                      'min_unit_size', 'max_parcel_size',
+                      'drop_after_build', 'residential',
+                      'num_units_to_build', 'remove_developed_buildings',
+                      'unplace_agents']
 
         results = {}
         for attribute in attributes:
@@ -279,7 +265,6 @@ class Developer(object):
             target_units)
         return target_units
 
-    # TODO Add target_units to parameters
     def pick(self, profit_to_prob_func=None):
         """
         Choose the buildings from the list that are feasible to build in
