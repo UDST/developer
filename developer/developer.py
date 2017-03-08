@@ -109,8 +109,7 @@ class Developer(object):
             parcel_size, ave_unit_size, current_units,
             year, cfg['bldg_sqft_per_job'],
             cfg['min_unit_size'], cfg['max_parcel_size'],
-            cfg['drop_after_build'], cfg['residential'],
-            cfg['num_units_to_build']
+            cfg['drop_after_build'], cfg['residential']
         )
 
         logger.debug('loaded Developer model from YAML')
@@ -124,8 +123,7 @@ class Developer(object):
         """
         attributes = ['bldg_sqft_per_job',
                       'min_unit_size', 'max_parcel_size',
-                      'drop_after_build', 'residential',
-                      'num_units_to_build']
+                      'drop_after_build', 'residential']
 
         results = {}
         for attribute in attributes:
