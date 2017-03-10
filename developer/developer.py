@@ -208,7 +208,7 @@ class Developer(object):
         df = df.reset_index(level=1)
         return df
 
-    def _feasibility_from_form(self):
+    def _get_dataframe_of_buildings(self):
 
         if self.forms is None:
             df = self.feasibility
@@ -217,6 +217,66 @@ class Developer(object):
         else:
             df = self.feasibility[self.forms]
         return df
+
+    def _remove_infeasible_buildings(self, df):
+
+        df = df[df.max_profit_far > 0]
+        self.ave_unit_size[
+            self.ave_unit_size < self.min_unit_size
+        ] = self.min_unit_size
+        df["ave_unit_size"] = self.ave_unit_size
+        df["parcel_size"] = self.parcel_size
+        df['current_units'] = self.current_units
+        df = df[df.parcel_size < self.max_parcel_size]
+
+        df['residential_units'] = (df.residential_sqft /
+                                   df.ave_unit_size).round()
+        df['job_spaces'] = (df.non_residential_sqft /
+                            self.bldg_sqft_per_job).round()
+
+        return df
+
+    def _calculate_net_units(self, df):
+
+        if self.residential:
+            df['net_units'] = df.residential_units - df.current_units
+        else:
+            df['net_units'] = df.job_spaces - df.current_units
+        return df[df.net_units > 0]
+
+    @staticmethod
+    def _calculate_probabilities(df, profit_to_prob_func):
+
+        if profit_to_prob_func:
+            p = profit_to_prob_func(df)
+        else:
+            df['max_profit_per_size'] = df.max_profit / df.parcel_size
+            p = df.max_profit_per_size.values / df.max_profit_per_size.sum()
+        return p, df
+
+    def _buildings_to_build(self, df, p):
+
+        if df.net_units.sum() < self.target_units:
+            print "WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO " \
+                  "MATCH DEMAND"
+            build_idx = df.index.values
+        elif self.target_units <= 0:
+            build_idx = []
+        else:
+            # we don't know how many developments we will need, as they differ
+            # in net_units. If all developments have net_units of 1 than we
+            # need target_units of them. So we choose the smaller of available
+            # developments and target_units.
+            choices = np.random.choice(df.index.values,
+                                       size=min(len(df.index),
+                                                self.target_units),
+                                       replace=False, p=p)
+            tot_units = df.net_units.loc[choices].values.cumsum()
+            ind = int(np.searchsorted(tot_units, self.target_units,
+                                      side="left")) + 1
+            build_idx = choices[:ind]
+
+        return build_idx
 
     def pick(self, profit_to_prob_func=None):
         """
@@ -244,62 +304,19 @@ class Developer(object):
             # no feasible buildings, might as well bail
             return
 
-        df = self._feasibility_from_form()
-
-        # feasible buildings only for this building type
-        df = df[df.max_profit_far > 0]
-        self.ave_unit_size[
-            self.ave_unit_size < self.min_unit_size
-        ] = self.min_unit_size
-        df["ave_unit_size"] = self.ave_unit_size
-        df["parcel_size"] = self.parcel_size
-        df['current_units'] = self.current_units
-        df = df[df.parcel_size < self.max_parcel_size]
-
-        df['residential_units'] = (df.residential_sqft /
-                                   df.ave_unit_size).round()
-        df['job_spaces'] = (df.non_residential_sqft /
-                            self.bldg_sqft_per_job).round()
-
-        if self.residential:
-            df['net_units'] = df.residential_units - df.current_units
-        else:
-            df['net_units'] = df.job_spaces - df.current_units
-        df = df[df.net_units > 0]
+        df = self._get_dataframe_of_buildings()
+        df = self._remove_infeasible_buildings(df)
+        df = self._calculate_net_units(df)
 
         if len(df) == 0:
             print "WARNING THERE ARE NO FEASIBLE BUILDING TO CHOOSE FROM"
             return
 
-        # print "Describe of net units\n", df.net_units.describe()
         print "Sum of net units that are profitable: {:,}".\
             format(int(df.net_units.sum()))
 
-        if profit_to_prob_func:
-            p = profit_to_prob_func(df)
-        else:
-            df['max_profit_per_size'] = df.max_profit / df.parcel_size
-            p = df.max_profit_per_size.values / df.max_profit_per_size.sum()
-
-        if df.net_units.sum() < self.target_units:
-            print "WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO " \
-                  "MATCH DEMAND"
-            build_idx = df.index.values
-        elif self.target_units <= 0:
-            build_idx = []
-        else:
-            # we don't know how many developments we will need, as they differ
-            # in net_units. If all developments have net_units of 1 than we
-            # need target_units of them. So we choose the smaller of available
-            # developments and target_units.
-            choices = np.random.choice(df.index.values,
-                                       size=min(len(df.index),
-                                                self.target_units),
-                                       replace=False, p=p)
-            tot_units = df.net_units.loc[choices].values.cumsum()
-            ind = int(np.searchsorted(tot_units, self.target_units,
-                                      side="left")) + 1
-            build_idx = choices[:ind]
+        p, df = self._calculate_probabilities(df, profit_to_prob_func)
+        build_idx = self._buildings_to_build(df, p)
 
         if self.drop_after_build:
             self.feasibility = self.feasibility.drop(build_idx)
