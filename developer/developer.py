@@ -278,6 +278,27 @@ class Developer(object):
 
         return build_idx
 
+    def _drop_built_buildings(self, build_idx):
+
+        if self.drop_after_build:
+            self.feasibility = self.feasibility.drop(build_idx)
+
+    def _prepare_new_buildings(self, df, build_idx):
+
+        new_df = df.loc[build_idx]
+        new_df.index.name = "parcel_id"
+
+        if self.year is not None:
+            new_df["year_built"] = self.year
+
+        if not isinstance(self.forms, list):
+            # form gets set only if forms is a list
+            new_df["form"] = self.forms
+
+        new_df["stories"] = new_df.stories.apply(np.ceil)
+
+        return new_df.reset_index()
+
     def pick(self, profit_to_prob_func=None):
         """
         Choose the buildings from the list that are feasible to build in
@@ -304,6 +325,7 @@ class Developer(object):
             # no feasible buildings, might as well bail
             return
 
+        # Get DataFrame of potential buildings from SqFtProForma steps
         df = self._get_dataframe_of_buildings()
         df = self._remove_infeasible_buildings(df)
         df = self._calculate_net_units(df)
@@ -315,23 +337,16 @@ class Developer(object):
         print "Sum of net units that are profitable: {:,}".\
             format(int(df.net_units.sum()))
 
+        # Generate development probabilities and pick buildings to build
         p, df = self._calculate_probabilities(df, profit_to_prob_func)
         build_idx = self._buildings_to_build(df, p)
 
-        if self.drop_after_build:
-            self.feasibility = self.feasibility.drop(build_idx)
+        # Drop built buildings from self.feasibility attribute if desired
+        self._drop_built_buildings(build_idx)
 
-        new_df = df.loc[build_idx]
-        new_df.index.name = "parcel_id"
+        # Prep DataFrame of new buildings
+        new_df = self._prepare_new_buildings(df, build_idx)
 
-        if self.year is not None:
-            new_df["year_built"] = self.year
+        return new_df
 
-        if not isinstance(self.forms, list):
-            # form gets set only if forms is a list
-            new_df["form"] = self.forms
-
-        new_df["stories"] = new_df.stories.apply(np.ceil)
-
-        return new_df.reset_index()
 
