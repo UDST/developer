@@ -208,6 +208,16 @@ class Developer(object):
         df = df.reset_index(level=1)
         return df
 
+    def _feasibility_from_form(self):
+
+        if self.forms is None:
+            df = self.feasibility
+        elif isinstance(self.forms, list):
+            df = self.keep_form_with_max_profit(self.forms)
+        else:
+            df = self.feasibility[self.forms]
+        return df
+
     def pick(self, profit_to_prob_func=None):
         """
         Choose the buildings from the list that are feasible to build in
@@ -234,12 +244,7 @@ class Developer(object):
             # no feasible buildings, might as well bail
             return
 
-        if self.forms is None:
-            df = self.feasibility
-        elif isinstance(self.forms, list):
-            df = self.keep_form_with_max_profit(self.forms)
-        else:
-            df = self.feasibility[self.forms]
+        df = self._feasibility_from_form()
 
         # feasible buildings only for this building type
         df = df[df.max_profit_far > 0]
