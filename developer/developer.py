@@ -152,6 +152,74 @@ class Developer(object):
         logger.debug('serializing Developer model to YAML')
         return utils.convert_to_yaml(self.to_dict, str_or_buffer)
 
+    def pick(self, profit_to_prob_func=None):
+        """
+        Choose the buildings from the list that are feasible to build in
+        order to match the specified demand.
+
+        Parameters
+        ----------
+        profit_to_prob_func: function
+            As there are so many ways to turn the development feasibility
+            into a probability to select it for building, the user may pass
+            a function which takes the feasibility dataframe and returns
+            a series of probabilities.  If no function is passed, the behavior
+            of this method will not change
+
+        Returns
+        -------
+        None if there are no feasible buildings
+        new_buildings : dataframe
+            DataFrame of buildings to add.  These buildings are rows from the
+            DataFrame that is returned from feasibility.
+        """
+
+        if len(self.feasibility) == 0:
+            # no feasible buildings, might as well bail
+            return
+
+        # Get DataFrame of potential buildings from SqFtProForma steps
+        df = self._get_dataframe_of_buildings()
+        df = self._remove_infeasible_buildings(df)
+        df = self._calculate_net_units(df)
+
+        if len(df) == 0:
+            print "WARNING THERE ARE NO FEASIBLE BUILDING TO CHOOSE FROM"
+            return
+
+        print "Sum of net units that are profitable: {:,}".\
+            format(int(df.net_units.sum()))
+
+        # Generate development probabilities and pick buildings to build
+        p, df = self._calculate_probabilities(df, profit_to_prob_func)
+        build_idx = self._buildings_to_build(df, p)
+
+        # Drop built buildings from self.feasibility attribute if desired
+        self._drop_built_buildings(build_idx)
+
+        # Prep DataFrame of new buildings
+        new_df = self._prepare_new_buildings(df, build_idx)
+
+        return new_df
+
+    def _get_dataframe_of_buildings(self):
+        """
+        Helper method to pick(). Returns a DataFrame of buildings from
+        self.feasibility based on what type is passed to self.forms
+
+        Returns
+        -------
+        df : DataFrame
+        """
+
+        if self.forms is None:
+            df = self.feasibility
+        elif isinstance(self.forms, list):
+            df = self.keep_form_with_max_profit(self.forms)
+        else:
+            df = self.feasibility[self.forms]
+        return df
+
     @staticmethod
     def _max_form(f, colname):
         """
@@ -208,40 +276,25 @@ class Developer(object):
         df = df.reset_index(level=1)
         return df
 
-    def pick(self, profit_to_prob_func=None):
+    def _remove_infeasible_buildings(self, df):
         """
-        Choose the buildings from the list that are feasible to build in
-        order to match the specified demand.
+        Helper method to pick(). Removes buildings from the DataFrame if:
+            - max_profit_far is 0 or less
+            - parcel_size is larger than max_parcel_size
+
+        Also calculates useful DataFrame columns from object attributes
+        for later calculations.
 
         Parameters
         ----------
-        profit_to_prob_func: function
-            As there are so many ways to turn the development feasibility
-            into a probability to select it for building, the user may pass
-            a function which takes the feasibility dataframe and returns
-            a series of probabilities.  If no function is passed, the behavior
-            of this method will not change
+        df : DataFrame
+            DataFrame of buildings from _get_dataframe_of_buildings()
 
         Returns
         -------
-        None if there are no feasible buildings
-        new_buildings : dataframe
-            DataFrame of buildings to add.  These buildings are rows from the
-            DataFrame that is returned from feasibility.
+        df : DataFrame
         """
 
-        if len(self.feasibility) == 0:
-            # no feasible buildings, might as well bail
-            return
-
-        if self.forms is None:
-            df = self.feasibility
-        elif isinstance(self.forms, list):
-            df = self.keep_form_with_max_profit(self.forms)
-        else:
-            df = self.feasibility[self.forms]
-
-        # feasible buildings only for this building type
         df = df[df.max_profit_far > 0]
         self.ave_unit_size[
             self.ave_unit_size < self.min_unit_size
@@ -256,25 +309,76 @@ class Developer(object):
         df['job_spaces'] = (df.non_residential_sqft /
                             self.bldg_sqft_per_job).round()
 
+        return df
+
+    def _calculate_net_units(self, df):
+        """
+        Helper method to pick(). Calculates the net_units column,
+        and removes buildings that have net_units of 0 or less.
+
+        Parameters
+        ----------
+        df : DataFrame
+            DataFrame of buildings from _remove_infeasible_buildings()
+
+        Returns
+        -------
+        df : DataFrame
+        """
+
         if self.residential:
             df['net_units'] = df.residential_units - df.current_units
         else:
             df['net_units'] = df.job_spaces - df.current_units
-        df = df[df.net_units > 0]
+        return df[df.net_units > 0]
 
-        if len(df) == 0:
-            print "WARNING THERE ARE NO FEASIBLE BUILDING TO CHOOSE FROM"
-            return
+    @staticmethod
+    def _calculate_probabilities(df, profit_to_prob_func):
+        """
+        Helper method to pick(). Calculates development probabilities based on
+        a preset rule, or an optional function passed to the constructor.
 
-        # print "Describe of net units\n", df.net_units.describe()
-        print "Sum of net units that are profitable: {:,}".\
-            format(int(df.net_units.sum()))
+        Parameters
+        ----------
+        df : DataFrame
+            DataFrame of buildings, prepared via _get_dataframe_of_buildings,
+            _remove_infeasible_buildings, and _calculate_net_units methods
+        profit_to_prob_func : function, optional
+            Function to calculate development probabilities for each building
+
+        Returns
+        -------
+        p : Series
+            Series of development probability for each building
+        df : DataFrame
+            DataFrame of buildings
+        """
 
         if profit_to_prob_func:
             p = profit_to_prob_func(df)
         else:
             df['max_profit_per_size'] = df.max_profit / df.parcel_size
             p = df.max_profit_per_size.values / df.max_profit_per_size.sum()
+        return p, df
+
+    def _buildings_to_build(self, df, p):
+        """
+        Helper method to pick(). Selects buildings to build based on
+        development probabilities.
+
+        Parameters
+        ----------
+        df : DataFrame
+            DataFrame of buildings from _calculate_probabilities method
+        p : Series
+            Probabilities from _calculate_probabilities method
+
+        Returns
+        -------
+        build_idx : ndarray
+            Index of buildings selected for development
+
+        """
 
         if df.net_units.sum() < self.target_units:
             print "WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO " \
@@ -296,8 +400,45 @@ class Developer(object):
                                       side="left")) + 1
             build_idx = choices[:ind]
 
+        return build_idx
+
+    def _drop_built_buildings(self, build_idx):
+        """
+        Helper method to pick(). Drops built buildings from the
+        self.feasibility attribute DataFrame.
+
+        Parameters
+        ----------
+        build_idx : Array-like
+            Index of buildings selected for development, from
+            _buildings_to_build method
+
+        Returns
+        -------
+        None
+        """
+
         if self.drop_after_build:
             self.feasibility = self.feasibility.drop(build_idx)
+
+    def _prepare_new_buildings(self, df, build_idx):
+        """
+        Helper method to pick(). Brings parcel_id into a column and applies
+        other compatibility fixes before returning to parcel model
+
+        Parameters
+        ----------
+        df : DataFrame
+            DataFrame of buildings from the _calculate_probabilities method
+        build_idx : Array-like
+            Index of buildings selected for development, from
+            _buildings_to_build method
+
+        Returns
+        -------
+        new_df : DataFrame
+
+        """
 
         new_df = df.loc[build_idx]
         new_df.index.name = "parcel_id"
@@ -312,4 +453,3 @@ class Developer(object):
         new_df["stories"] = new_df.stories.apply(np.ceil)
 
         return new_df.reset_index()
-
