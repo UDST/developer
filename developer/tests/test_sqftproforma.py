@@ -96,7 +96,7 @@ def test_sqftproforma_to_yaml_defaults():
     pf_from_yaml = sqpf.SqFtProForma.from_yaml(
         str_or_buffer='test_sqftproforma_config.yaml')
 
-    assert pf_from_yaml.to_dict == settings
+    assert pf_from_yaml.to_dict == pf_from_settings.to_dict
 
     os.remove('test_sqftproforma_config.yaml')
 
