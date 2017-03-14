@@ -75,6 +75,32 @@ def test_sqftproforma_to_yaml():
     os.remove('test_sqftproforma_config.yaml')
 
 
+def test_sqftproforma_to_yaml_defaults():
+    # Make sure that optional parameters to the SqFtProForma constructor
+    # are being read from config
+
+    if os.path.exists('test_sqftproforma_config.yaml'):
+        os.remove('test_sqftproforma_config.yaml')
+
+    settings = sqpf.SqFtProForma.get_defaults()
+    settings['residential_to_yearly'] = False
+    settings['forms_to_test'] = 'residential'
+    settings['only_built'] = False
+    settings['pass_through'] = ['some_column']
+    settings['simple_zoning'] = True
+    settings['parcel_filter'] = 'some_expression'
+
+    pf_from_settings = sqpf.SqFtProForma(**settings)
+    pf_from_settings.to_yaml('test_sqftproforma_config.yaml')
+
+    pf_from_yaml = sqpf.SqFtProForma.from_yaml(
+        str_or_buffer='test_sqftproforma_config.yaml')
+
+    assert pf_from_yaml.to_dict == pf_from_settings.to_dict
+
+    os.remove('test_sqftproforma_config.yaml')
+
+
 def test_sqftproforma_defaults(simple_dev_inputs):
     pf = sqpf.SqFtProForma.from_defaults()
 
