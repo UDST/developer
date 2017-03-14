@@ -272,7 +272,13 @@ class SqFtProForma(object):
             cfg['parking_configs'], cfg['costs'], cfg['heights_for_costs'],
             cfg['parking_sqft_d'], cfg['parking_cost_d'],
             cfg['height_per_story'], cfg['max_retail_height'],
-            cfg['max_industrial_height']
+            cfg['max_industrial_height'],
+            cfg.get('residential_to_yearly', True),
+            cfg.get('forms_to_test', None),
+            cfg.get('only_built', True),
+            cfg.get('pass_through', None),
+            cfg.get('simple_zoning', False),
+            cfg.get('parcel_filter', None)
         )
 
         logger.debug('loaded SqftProForma model from YAML')
