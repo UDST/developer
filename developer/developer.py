@@ -17,19 +17,12 @@ class Developer(object):
     ----------
     feasibility : DataFrame or dict
         Results from SqftProForma lookup method
-    form : string or list
+    forms : string or list
         One or more of the building forms from the pro forma specification -
         e.g. "residential" or "mixedresidential" - these are configuration
         parameters passed previously to the pro forma.  If more than one form
         is passed the forms compete with each other (based on profitability)
         for which one gets built in order to meet demand.
-    agents : DataFrame Wrapper
-        Used to compute the current demand for units/floorspace in the area
-    buildings : DataFrame Wrapper
-        Used to compute the current supply of units/floorspace in the area
-    supply_fname : string
-        Identifies the column in buildings which indicates the supply of
-        units/floorspace
     parcel_size : series
         The size of the parcels.  This was passed to feasibility as well,
         but should be passed here as well.  Index should be parcel_ids.
@@ -45,8 +38,6 @@ class Developer(object):
     year : int
         The year of the simulation - will be assigned to 'year_built' on the
         new buildings
-    target_vacancy : float
-        The target vacancy rate - used to determine how much to build
     bldg_sqft_per_job : float (default 400.0)
         The average square feet per job for this building form.
     min_unit_size : float
@@ -68,53 +59,35 @@ class Developer(object):
         computing it internally by using the length of agents adn the sum of
         the relevant supply columin - this trusts the caller to know how to
         compute this.
-    remove_developed_buildings : optional
-        Remove all buildings on the parcels which are being developed on
-    unplace_agents : list of strings
-        For all tables in the list, will look for field building_id and set
-        it to -1 for buildings which are removed - only executed if
-        remove_developed_buildings is true
 
     """
 
-    def __init__(self, feasibility, form, agents, buildings,
-                 supply_fname, parcel_size, ave_unit_size, current_units,
-                 year=None, target_vacancy=0.1, bldg_sqft_per_job=400.0,
-                 min_unit_size=400, max_parcel_size=2000000,
+    def __init__(self, feasibility, forms, target_units,
+                 parcel_size, ave_unit_size, current_units,
+                 year=None, bldg_sqft_per_job=400.0,
+                 min_unit_size=400, max_parcel_size=200000,
                  drop_after_build=True, residential=True,
-                 num_units_to_build=None, remove_developed_buildings=True,
-                 unplace_agents=['households', 'jobs']):
+                 num_units_to_build=None):
 
         if isinstance(feasibility, dict):
             feasibility = pd.concat(feasibility.values(),
                                     keys=feasibility.keys(), axis=1)
         self.feasibility = feasibility
-        self.form = form
-        self.agents = agents
-        self.buildings = buildings
-        self.supply_fname = supply_fname
+        self.forms = forms
+        self.target_units = target_units
         self.parcel_size = parcel_size
         self.ave_unit_size = ave_unit_size
         self.current_units = current_units
         self.year = year
-        self.target_vacancy = target_vacancy
         self.bldg_sqft_per_job = bldg_sqft_per_job
         self.min_unit_size = min_unit_size
         self.max_parcel_size = max_parcel_size
         self.drop_after_build = drop_after_build
         self.residential = residential
         self.num_units_to_build = num_units_to_build
-        self.remove_developed_buildings = remove_developed_buildings
-        self.unplace_agents = unplace_agents
-
-        self.target_units = (
-            self.num_units_to_build or
-            self.compute_units_to_build(len(agents),
-                                        buildings[supply_fname].sum(),
-                                        self.target_vacancy))
 
     @classmethod
-    def from_yaml(cls, feasibility, form, agents, buildings,
+    def from_yaml(cls, feasibility, forms, target_units,
                   parcel_size, ave_unit_size, current_units,
                   year=None, yaml_str=None, str_or_buffer=None):
         """
@@ -132,14 +105,11 @@ class Developer(object):
         cfg = utils.yaml_to_dict(yaml_str, str_or_buffer)
 
         model = cls(
-            feasibility, form, agents,
-            buildings, cfg['supply_fname'],
-            parcel_size, ave_unit_size, current_units, year,
-            cfg['target_vacancy'], cfg['bldg_sqft_per_job'],
+            feasibility, forms, target_units,
+            parcel_size, ave_unit_size, current_units,
+            year, cfg['bldg_sqft_per_job'],
             cfg['min_unit_size'], cfg['max_parcel_size'],
-            cfg['drop_after_build'], cfg['residential'],
-            cfg['num_units_to_build'], cfg['remove_developed_buildings'],
-            cfg['unplace_agents']
+            cfg['drop_after_build'], cfg['residential']
         )
 
         logger.debug('loaded Developer model from YAML')
@@ -151,11 +121,9 @@ class Developer(object):
         Return a dict representation of a SqftProForma instance.
 
         """
-
-        attributes = ['supply_fname', 'target_vacancy', 'bldg_sqft_per_job',
-                      'min_unit_size', 'max_parcel_size', 'drop_after_build',
-                      'residential', 'num_units_to_build',
-                      'remove_developed_buildings', 'unplace_agents']
+        attributes = ['bldg_sqft_per_job',
+                      'min_unit_size', 'max_parcel_size',
+                      'drop_after_build', 'residential']
 
         results = {}
         for attribute in attributes:
@@ -240,37 +208,6 @@ class Developer(object):
         df = df.reset_index(level=1)
         return df
 
-    @staticmethod
-    def compute_units_to_build(num_agents, num_units, target_vacancy):
-        """
-        Compute number of units to build to match target vacancy.
-
-        Parameters
-        ----------
-        num_agents : int
-            number of agents that need units in the region
-        num_units : int
-            number of units in buildings
-        target_vacancy : float (0-1.0)
-            target vacancy rate
-
-        Returns
-        -------
-        number_of_units : int
-            the number of units that need to be built
-        """
-        print "Number of agents: {:,}".format(num_agents)
-        print "Number of agent spaces: {:,}".format(int(num_units))
-        assert target_vacancy < 1.0
-        target_units = int(max(
-            (num_agents / (1 - target_vacancy) - num_units), 0))
-        print "Current vacancy = {:.2f}".format(1 - num_agents /
-                                                float(num_units))
-        print "Target vacancy = {:.2f}, target of new units = {:,}".format(
-            target_vacancy,
-            target_units)
-        return target_units
-
     def pick(self, profit_to_prob_func=None):
         """
         Choose the buildings from the list that are feasible to build in
@@ -297,12 +234,12 @@ class Developer(object):
             # no feasible buildings, might as well bail
             return
 
-        if self.form is None:
+        if self.forms is None:
             df = self.feasibility
-        elif isinstance(self.form, list):
-            df = self.keep_form_with_max_profit(self.form)
+        elif isinstance(self.forms, list):
+            df = self.keep_form_with_max_profit(self.forms)
         else:
-            df = self.feasibility[self.form]
+            df = self.feasibility[self.forms]
 
         # feasible buildings only for this building type
         df = df[df.max_profit_far > 0]
@@ -368,49 +305,11 @@ class Developer(object):
         if self.year is not None:
             new_df["year_built"] = self.year
 
-        if not isinstance(self.form, list):
+        if not isinstance(self.forms, list):
             # form gets set only if forms is a list
-            new_df["form"] = self.form
+            new_df["form"] = self.forms
 
         new_df["stories"] = new_df.stories.apply(np.ceil)
 
         return new_df.reset_index()
 
-    # TODO Move this into parcel model
-    @staticmethod
-    def merge(old_df, new_df, return_index=False):
-        """
-        Merge two dataframes of buildings.  The old dataframe is
-        usually the buildings dataset and the new dataframe is a modified
-        (by the user) version of what is returned by the pick method.
-
-        Parameters
-        ----------
-        old_df : dataframe
-            Current set of buildings
-        new_df : dataframe
-            New buildings to add, usually comes from this module
-        return_index : bool
-            If return_index is true, this method will return the new
-            index of new_df (which changes in order to create a unique
-            index after the merge)
-
-        Returns
-        -------
-        df : dataframe
-            Combined DataFrame of buildings, makes sure indexes don't overlap
-        index : pd.Index
-            If and only if return_index is True, return the new index for the
-            new_df dataframe (which changes in order to create a unique index
-            after the merge)
-        """
-        maxind = np.max(old_df.index.values)
-        new_df = new_df.reset_index(drop=True)
-        new_df.index = new_df.index + maxind + 1
-        concat_df = pd.concat([old_df, new_df], verify_integrity=True)
-        concat_df.index.name = 'building_id'
-
-        if return_index:
-            return concat_df, new_df.index
-
-        return concat_df
