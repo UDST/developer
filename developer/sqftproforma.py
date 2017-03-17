@@ -193,23 +193,23 @@ class SqFtProForma(object):
         fars = pd.Series(self.fars)
         assert len(fars[fars > 20]) == 0
         assert len(fars[fars <= 0]) == 0
-        for k, v in self.forms.iteritems():
+        for k, v in self.forms.items():
             assert isinstance(v, dict)
-            for k2, v2 in self.forms[k].iteritems():
+            for k2, v2 in self.forms[k].items():
                 assert isinstance(k2, str)
                 assert isinstance(v2, float)
-            for k2, v2 in self.forms[k].iteritems():
+            for k2, v2 in self.forms[k].items():
                 assert isinstance(k2, str)
                 assert isinstance(v2, float)
-        for k, v in self.parking_rates.iteritems():
+        for k, v in self.parking_rates.items():
             assert isinstance(k, str)
             assert k in self.uses
             assert 0 <= v < 5
-        for k, v in self.parking_sqft_d.iteritems():
+        for k, v in self.parking_sqft_d.items():
             assert isinstance(k, str)
             assert k in self.parking_configs
             assert 50 <= v <= 1000
-        for k, v in self.parking_sqft_d.iteritems():
+        for k, v in self.parking_sqft_d.items():
             assert isinstance(k, str)
             assert k in self.parking_cost_d
             assert 10 <= v <= 300
@@ -218,7 +218,7 @@ class SqFtProForma(object):
             if np.isinf(v):
                 continue
             assert 0 <= v <= 1000
-        for k, v in self.costs.iteritems():
+        for k, v in self.costs.items():
             assert isinstance(k, str)
             assert k in self.uses
             for i in v:
@@ -235,7 +235,7 @@ class SqFtProForma(object):
             [self.parking_rates[use] for use in self.uses])
         self.res_ratios = {}
         assert len(self.uses) == len(self.residential_uses)
-        for k, v in self.forms.iteritems():
+        for k, v in self.forms.items():
             self.forms[k] = np.array(
                 [self.forms[k].get(use, 0.0) for use in self.uses])
             # normalize if not already
