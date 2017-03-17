@@ -61,7 +61,7 @@ def test_sqftproforma_to_yaml():
         os.remove('test_sqftproforma_config.yaml')
 
     pf = sqpf.SqFtProForma.from_defaults()
-    with open('test_sqftproforma_config.yaml', 'wb') as yaml_file:
+    with open('test_sqftproforma_config.yaml', 'w') as yaml_file:
         pf.to_yaml(yaml_file)
         yaml_string = pf.to_yaml()
 

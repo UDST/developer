@@ -94,7 +94,7 @@ def test_developer_yaml_roundtrip(res10):
         os.remove('test_dev_config.yaml')
 
     dev = develop.Developer(**res10)
-    with open('test_dev_config.yaml', 'wb') as yaml_file:
+    with open('test_dev_config.yaml', 'w') as yaml_file:
         dev.to_yaml(yaml_file)
         yaml_string = dev.to_yaml()
 
