@@ -16,12 +16,13 @@ install:
 - conda update -q conda
 - conda info -a
 - |
-  conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy=1.11 pandas pytest matplotlib scipy statsmodels
+  conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy pandas pytest matplotlib scipy statsmodels
 - source activate test-environment
 - conda list
 - pip install .
 - pip install https://github.com/UDST/orca/archive/master.zip
-- pip install urbansim pandana
+- pip install urbansim
+- if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; pip install pandana
 - git clone git@github.com:urbansim/urbansim_parcels.git
 - pip install ./urbansim_parcels
 
