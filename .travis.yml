@@ -22,7 +22,9 @@ install:
 - pip install .
 - pip install https://github.com/UDST/orca/archive/master.zip
 - pip install urbansim
-- if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; pip install pandana
+- if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+     pip install pandana;
+  fi
 - git clone git@github.com:urbansim/urbansim_parcels.git
 - pip install ./urbansim_parcels
 

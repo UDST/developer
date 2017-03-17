@@ -188,8 +188,8 @@ class Developer(object):
             print("WARNING THERE ARE NO FEASIBLE BUILDING TO CHOOSE FROM")
             return
 
-        print("Sum of net units that are profitable: {:,}".
-            format(int(df.net_units.sum())))
+        print("Sum of net units that are profitable: {:,}".format(
+            int(df.net_units.sum())))
 
         # Generate development probabilities and pick buildings to build
         p, df = self._calculate_probabilities(df, profit_to_prob_func)
@@ -382,7 +382,7 @@ class Developer(object):
         """
 
         if df.net_units.sum() < self.target_units:
-            print("WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO"
+            print("WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO",
                   "MATCH DEMAND")
             build_idx = df.index.values
         elif self.target_units <= 0:
