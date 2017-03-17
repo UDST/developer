@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import pytest
 
-from .. import sqftproforma as sqpf
+from developer import sqftproforma as sqpf
 
 
 @pytest.fixture

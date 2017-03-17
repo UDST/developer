@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 import logging
-import utils
-from utils import columnize
+import developer.utils as utils
+from developer.utils import columnize
 
 logger = logging.getLogger(__name__)
 
