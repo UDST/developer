@@ -30,4 +30,6 @@ install:
 
 script:
 - py.test
-- cd urbansim_parcels/sf_example; python simulate.py
+- if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+     cd urbansim_parcels/sf_example; python simulate.py;
+  fi
