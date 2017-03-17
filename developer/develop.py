@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 import pandas as pd
 import numpy as np
 import developer.utils as utils
@@ -184,11 +185,11 @@ class Developer(object):
         df = self._calculate_net_units(df)
 
         if len(df) == 0:
-            print "WARNING THERE ARE NO FEASIBLE BUILDING TO CHOOSE FROM"
+            print("WARNING THERE ARE NO FEASIBLE BUILDING TO CHOOSE FROM")
             return
 
-        print "Sum of net units that are profitable: {:,}".\
-            format(int(df.net_units.sum()))
+        print("Sum of net units that are profitable: {:,}".
+            format(int(df.net_units.sum())))
 
         # Generate development probabilities and pick buildings to build
         p, df = self._calculate_probabilities(df, profit_to_prob_func)
@@ -381,8 +382,8 @@ class Developer(object):
         """
 
         if df.net_units.sum() < self.target_units:
-            print "WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO " \
-                  "MATCH DEMAND"
+            print("WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO"
+                  "MATCH DEMAND")
             build_idx = df.index.values
         elif self.target_units <= 0:
             build_idx = []
