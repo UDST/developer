@@ -543,7 +543,7 @@ class SqFtProForma(object):
         import matplotlib.pyplot as plt
 
         df_d = self.reference_dict
-        keys = df_d.keys()
+        keys = list(df_d.keys())
         keys.sort()
         for key in keys:
             logger.debug("\n" + str(key) + "\n")
@@ -552,7 +552,7 @@ class SqFtProForma(object):
             logger.debug("\n" + str(key) + "\n")
             logger.debug(self.get_ave_cost_sqft(form, "surface"))
 
-        keys = self.forms.keys()
+        keys = list(self.forms.keys())
         keys.sort()
         cnt = 1
         share = None
@@ -628,7 +628,7 @@ class SqFtProFormaReference(object):
         """
 
         # get all the building forms we can use
-        keys = self.forms.keys()
+        keys = list(self.forms.keys())
         keys.sort()
         df_d = {}
         for name in keys:
