@@ -1,10 +1,11 @@
+from __future__ import print_function, division, absolute_import
 import os
 
 import pandas as pd
 import numpy as np
 import pytest
 
-from .. import sqftproforma as sqpf
+from developer import sqftproforma as sqpf
 
 
 @pytest.fixture
@@ -60,7 +61,7 @@ def test_sqftproforma_to_yaml():
         os.remove('test_sqftproforma_config.yaml')
 
     pf = sqpf.SqFtProForma.from_defaults()
-    with open('test_sqftproforma_config.yaml', 'wb') as yaml_file:
+    with open('test_sqftproforma_config.yaml', 'w') as yaml_file:
         pf.to_yaml(yaml_file)
         yaml_string = pf.to_yaml()
 

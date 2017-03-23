@@ -1,9 +1,10 @@
+from __future__ import print_function, division, absolute_import
 import pandas as pd
 import pytest
 import os
 
-from .. import sqftproforma as sqpf
-from .. import developer
+from developer import sqftproforma as sqpf
+from developer import develop
 
 
 @pytest.fixture
@@ -55,16 +56,16 @@ def nonres(base_args):
 
 def test_res_developer(res):
 
-    dev = developer.Developer(target_units=10, **res)
+    dev = develop.Developer(target_units=10, **res)
     bldgs = dev.pick()
     assert len(bldgs) == 1
     assert len(dev.feasibility) == 2
 
-    dev = developer.Developer(target_units=1000, **res)
+    dev = develop.Developer(target_units=1000, **res)
     bldgs = dev.pick()
     assert len(bldgs) == 3
 
-    dev = developer.Developer(target_units=2, residential=False, **res)
+    dev = develop.Developer(target_units=2, residential=False, **res)
     bldgs = dev.pick()
     assert bldgs is None
 
@@ -77,13 +78,13 @@ def res10(res):
 
 
 def test_developer_dict_roundtrip(res10):
-    dev1 = developer.Developer(**res10)
+    dev1 = develop.Developer(**res10)
     config1 = dev1.to_dict
 
     next_args = config1.copy()
     next_args.update(res10)
 
-    dev2 = developer.Developer(**next_args)
+    dev2 = develop.Developer(**next_args)
     config2 = dev2.to_dict
 
     assert config1 == config2
@@ -93,16 +94,16 @@ def test_developer_yaml_roundtrip(res10):
     if os.path.exists('test_dev_config.yaml'):
         os.remove('test_dev_config.yaml')
 
-    dev = developer.Developer(**res10)
-    with open('test_dev_config.yaml', 'wb') as yaml_file:
+    dev = develop.Developer(**res10)
+    with open('test_dev_config.yaml', 'w') as yaml_file:
         dev.to_yaml(yaml_file)
         yaml_string = dev.to_yaml()
 
-    dev_from_yaml_file = developer.Developer.from_yaml(
+    dev_from_yaml_file = develop.Developer.from_yaml(
         str_or_buffer='test_dev_config.yaml', **res10)
     assert dev.to_dict == dev_from_yaml_file.to_dict
 
-    dev_from_yaml_string = developer.Developer.from_yaml(
+    dev_from_yaml_string = develop.Developer.from_yaml(
         yaml_str=yaml_string, **res10)
     assert dev.to_dict == dev_from_yaml_string.to_dict
 
@@ -110,5 +111,5 @@ def test_developer_yaml_roundtrip(res10):
 
 
 def test_developer_compute_forms_max_profit(res10):
-    dev = developer.Developer(**res10)
+    dev = develop.Developer(**res10)
     dev.keep_form_with_max_profit()
