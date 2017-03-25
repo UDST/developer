@@ -25,7 +25,7 @@ install:
      pip install https://github.com/UDST/osmnet/archive/python3-support.zip &&
      pip install https://github.com/UDST/pandana/archive/python3-support.zip; fi
 - pip install .
-- cd .. && git clone -b python3 git@github.com:urbansim/urbansim_parcels.git
+- cd .. && git clone git@github.com:urbansim/urbansim_parcels.git
 - pip install ./urbansim_parcels
 
 script:
