@@ -2,6 +2,7 @@ language: python
 sudo: false
 python:
 - '2.7'
+- '3.5'
 
 install:
 - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
@@ -14,15 +15,18 @@ install:
 - conda update -q conda
 - conda info -a
 - |
-  conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy=1.11 pandas pytest matplotlib scipy statsmodels
+  conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy pandas pytest matplotlib scipy statsmodels
 - source activate test-environment
 - conda list
-- pip install .
 - pip install https://github.com/UDST/orca/archive/master.zip
-- pip install urbansim pandana
-- git clone git@github.com:urbansim/urbansim_parcels.git
+- pip install https://github.com/pksohn/urbansim/archive/python3.zip
+- if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then pip install pandana; else
+     pip install https://github.com/UDST/osmnet/archive/python3-support.zip &&
+     pip install https://github.com/UDST/pandana/archive/python3-support.zip; fi
+- pip install .
+- cd .. && git clone git@github.com:urbansim/urbansim_parcels.git
 - pip install ./urbansim_parcels
 
 script:
-- py.test
-- cd urbansim_parcels/sf_example; python simulate.py
+- cd "$TRAVIS_BUILD_DIR" && py.test
+- cd ../urbansim_parcels/sf_example && python simulate.py

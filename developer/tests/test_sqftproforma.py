@@ -1,10 +1,11 @@
+from __future__ import print_function, division, absolute_import
 import os
 
 import pandas as pd
 import numpy as np
 import pytest
 
-from .. import sqftproforma as sqpf
+from developer import sqftproforma as sqpf
 
 
 @pytest.fixture
@@ -60,7 +61,7 @@ def test_sqftproforma_to_yaml():
         os.remove('test_sqftproforma_config.yaml')
 
     pf = sqpf.SqFtProForma.from_defaults()
-    with open('test_sqftproforma_config.yaml', 'wb') as yaml_file:
+    with open('test_sqftproforma_config.yaml', 'w') as yaml_file:
         pf.to_yaml(yaml_file)
         yaml_string = pf.to_yaml()
 
@@ -71,6 +72,32 @@ def test_sqftproforma_to_yaml():
     pf_from_yaml_string = sqpf.SqFtProForma.from_yaml(
         yaml_str=yaml_string)
     assert pf.to_dict == pf_from_yaml_string.to_dict
+
+    os.remove('test_sqftproforma_config.yaml')
+
+
+def test_sqftproforma_to_yaml_defaults():
+    # Make sure that optional parameters to the SqFtProForma constructor
+    # are being read from config
+
+    if os.path.exists('test_sqftproforma_config.yaml'):
+        os.remove('test_sqftproforma_config.yaml')
+
+    settings = sqpf.SqFtProForma.get_defaults()
+    settings['residential_to_yearly'] = False
+    settings['forms_to_test'] = 'residential'
+    settings['only_built'] = False
+    settings['pass_through'] = ['some_column']
+    settings['simple_zoning'] = True
+    settings['parcel_filter'] = 'some_expression'
+
+    pf_from_settings = sqpf.SqFtProForma(**settings)
+    pf_from_settings.to_yaml('test_sqftproforma_config.yaml')
+
+    pf_from_yaml = sqpf.SqFtProForma.from_yaml(
+        str_or_buffer='test_sqftproforma_config.yaml')
+
+    assert pf_from_yaml.to_dict == pf_from_settings.to_dict
 
     os.remove('test_sqftproforma_config.yaml')
 
