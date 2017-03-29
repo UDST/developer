@@ -9,17 +9,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='developer',
-    version='0.1dev',
+    version='0.2.0',
     description='Urbansim developer model',
     author='UrbanSim Inc.',
     author_email='info@urbansim.com',
     url='https://github.com/urbansim/developer',
     classifiers=[
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5'
     ],
     packages=find_packages(exclude=['*.tests']),
