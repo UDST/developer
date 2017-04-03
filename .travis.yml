@@ -21,8 +21,8 @@ install:
 - pip install pycodestyle
 - pip install https://github.com/UDST/orca/archive/master.zip
 - pip install https://github.com/pksohn/urbansim/archive/python3.zip
+- pip install osmnet
 - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then pip install pandana; else
-     pip install https://github.com/UDST/osmnet/archive/python3-support.zip &&
      pip install https://github.com/UDST/pandana/archive/python3-support.zip; fi
 - pip install .
 - cd .. && git clone git@github.com:urbansim/urbansim_parcels.git
