@@ -840,6 +840,11 @@ class SqFtProFormaLookup(object):
             This is required if max_dua is passed above, otherwise it is
             optional. This is the same as the parameter to Developer.pick()
             (it should be the same series).
+        occ : dataframe, optional
+            A set of columns, one for each of the uses passed in the
+            configuration. Values are proportion of new development that would
+            be expected to be occupied. Same names as rent columns, with "occ_"
+            prefix. Typical names would be "occ_residential", "occ_retail", etc
 
         Returns
         -------
@@ -958,6 +963,15 @@ class SqFtProFormaLookup(object):
         # weighted rent for this form
         df['weighted_rent'] = np.dot(df[self.uses], self.forms[form])
 
+        # weighted occupancy for this form
+        occupancies = ['occ_{}'.format(use) for use in self.uses]
+        if set(occupancies).issubset(set(df.columns.tolist())):
+            df['weighted_occupancy'] = np.dot(
+                df[occupancies],
+                self.forms[form])
+        else:
+            df['weighted_occupancy'] = 1.0
+
         # min between max_fars and max_heights
         df['max_far_from_heights'] = (df.max_height /
                                       self.height_per_story *
@@ -1003,7 +1017,8 @@ class SqFtProFormaLookup(object):
         building_revenue = (building_bulks *
                             (1 - parking_sqft_ratio) *
                             self.building_efficiency *
-                            df.weighted_rent.values /
+                            df.weighted_rent.values *
+                            df.weighted_occupancy.values /
                             self.cap_rate)
 
         # profit for each form

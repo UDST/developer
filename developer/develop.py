@@ -175,8 +175,8 @@ class Developer(object):
             DataFrame that is returned from feasibility.
         """
 
-        if len(self.feasibility) == 0:
-            # no feasible buildings, might as well bail
+        if self._exit_check() is True:
+            # Check for empty DataFrames
             return
 
         # Get DataFrame of potential buildings from SqFtProForma steps
@@ -202,6 +202,23 @@ class Developer(object):
         new_df = self._prepare_new_buildings(df, build_idx)
 
         return new_df
+
+    def _exit_check(self):
+        if self.forms is None:
+            if len(self.feasibility) == 0 or self.feasibility.size == 0:
+                # no feasible buildings, might as well bail
+                return True
+        elif isinstance(self.forms, list):
+            for form in self.forms:
+                df = self.feasibility[form]
+                if 'max_profit' not in df.columns.tolist():
+                    return True
+        else:
+            df = self.feasibility[self.forms]
+            if len(df) == 0 or df.size == 0:
+                # no feasible buildings, might as well bail
+                return True
+        return False
 
     def _get_dataframe_of_buildings(self):
         """
@@ -381,7 +398,11 @@ class Developer(object):
 
         """
 
-        if df.net_units.sum() < self.target_units:
+        if self.target_units is None:
+            print("BUILDING ALL WITH PROFIT > $100K")
+            profitable = df.loc[df.max_profit > 100000.0]
+            build_idx = profitable.index.values
+        elif df.net_units.sum() < self.target_units:
             print("WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO",
                   "MATCH DEMAND")
             build_idx = df.index.values
