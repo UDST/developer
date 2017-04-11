@@ -1014,12 +1014,12 @@ class SqFtProFormaLookup(object):
         total_costs = building_costs + df.land_cost.values
 
         # rent to make for the new building
-        building_revenue = (building_bulks *
-                            (1 - parking_sqft_ratio) *
-                            self.building_efficiency *
-                            df.weighted_rent.values *
-                            df.weighted_occupancy.values /
-                            self.cap_rate)
+        building_revenue = (building_bulks
+                            * (1 - parking_sqft_ratio)
+                            * self.building_efficiency
+                            * df.weighted_rent.values
+                            * df.weighted_occupancy.values
+                            / self.cap_rate)
 
         # profit for each form
         profit = building_revenue - total_costs
