@@ -153,7 +153,7 @@ class Developer(object):
         logger.debug('serializing Developer model to YAML')
         return utils.convert_to_yaml(self.to_dict, str_or_buffer)
 
-    def pick(self, profit_to_prob_func=None):
+    def pick(self, profit_to_prob_func=None, min_profit_per_sqft=None):
         """
         Choose the buildings from the list that are feasible to build in
         order to match the specified demand.
@@ -193,7 +193,7 @@ class Developer(object):
 
         # Generate development probabilities and pick buildings to build
         p, df = self._calculate_probabilities(df, profit_to_prob_func)
-        build_idx = self._buildings_to_build(df, p)
+        build_idx = self._buildings_to_build(df, p, min_profit_per_sqft)
 
         # Drop built buildings from self.feasibility attribute if desired
         self._drop_built_buildings(build_idx)
@@ -379,7 +379,7 @@ class Developer(object):
             p = df.max_profit_per_size.values / df.max_profit_per_size.sum()
         return p, df
 
-    def _buildings_to_build(self, df, p):
+    def _buildings_to_build(self, df, p, min_profit_per_sqft=None):
         """
         Helper method to pick(). Selects buildings to build based on
         development probabilities.
@@ -390,6 +390,8 @@ class Developer(object):
             DataFrame of buildings from _calculate_probabilities method
         p : Series
             Probabilities from _calculate_probabilities method
+        min_profit_per_sqft : numeric
+            Minimum profit per sqft required to build, if target units is None
 
         Returns
         -------
@@ -399,8 +401,9 @@ class Developer(object):
         """
 
         if self.target_units is None:
-            print("BUILDING ALL WITH PROFIT > $20 / sqft")
-            profitable = df.loc[df.max_profit_per_size > 20.0]
+            print("BUILDING ALL BUILDINGS WITH PROFIT > ${:.2f} / sqft"
+                  .format(min_profit_per_sqft))
+            profitable = df.loc[df.max_profit_per_size > min_profit_per_sqft]
             build_idx = profitable.index.values
         elif df.net_units.sum() < self.target_units:
             print("WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO",
