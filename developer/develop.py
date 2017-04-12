@@ -399,8 +399,8 @@ class Developer(object):
         """
 
         if self.target_units is None:
-            print("BUILDING ALL WITH PROFIT > $100K")
-            profitable = df.loc[df.max_profit > 100000.0]
+            print("BUILDING ALL WITH PROFIT > $20 / sqft")
+            profitable = df.loc[df.max_profit_per_size > 20.0]
             build_idx = profitable.index.values
         elif df.net_units.sum() < self.target_units:
             print("WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO",
