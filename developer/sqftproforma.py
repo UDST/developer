@@ -644,43 +644,64 @@ class SqFtProFormaReference(object):
         self.reference_dict = df_d
 
     def _reference_dataframe(self, name, uses_distrib, parking_config):
+        """
+        This generates a reference DataFrame for each form and parking
+        configuration, which provides development information for various
+        floor-to-area ratios.
 
-        # going to make a dataframe to store values to make
-        # pro forma results transparent
+        Parameters
+        ----------
+        name : str
+            Name of form
+        uses_distrib : ndarray
+            The distribution of uses in this form
+        parking_config : str
+            Name of parking configuration
+
+        Returns
+        -------
+        df : DataFrame
+        """
+
         df = pd.DataFrame(index=self.fars)
+
+        # Array of square footage values for each FAR
+        building_bulk = self._building_bulk(uses_distrib, parking_config)
+
+        # Array of parking stalls required for each FAR
+        parking_stalls = (building_bulk
+                          * np.sum(uses_distrib * self.parking_rates)
+                          / self.sqft_per_rate)
+
+        # Array of stories built at each FAR
+        stories = self._stories(parking_config, building_bulk, parking_stalls)
+
+        # Square feet of parking required for this configuration (constant)
+        park_sqft = self._park_sqft(parking_config, parking_stalls)
+
+        # Array of total parking cost required for each FAR
+        park_cost = (self.parking_cost_d[parking_config]
+                     * parking_stalls
+                     * self.parking_sqft_d[parking_config])
+
+        # Array of building cost per square foot for each FAR
+        building_cost_per_sqft = self._building_cost(uses_distrib, stories)
 
         df['far'] = self.fars
         df['pclsz'] = self.tiled_parcel_sizes
-
-        building_bulk = self._building_bulk(uses_distrib, parking_config)
         df['building_sqft'] = building_bulk
-
-        parkingstalls = (building_bulk *
-                         np.sum(uses_distrib * self.parking_rates) /
-                         self.sqft_per_rate)
-        df['spaces'] = parkingstalls
-
-        df['park_sqft'] = self._park_sqft(parking_config, parkingstalls)
-        stories = self._stories(parking_config, building_bulk, parkingstalls)
-
+        df['spaces'] = parking_stalls
+        df['park_sqft'] = park_sqft
         df['total_built_sqft'] = df.building_sqft + df.park_sqft
         df['parking_sqft_ratio'] = df.park_sqft / df.total_built_sqft
-
-        stories /= self.parcel_coverage
         df['stories'] = np.ceil(stories)
-
         df['height'] = df.stories * self.height_per_story
-        df['build_cost_sqft'] = self._building_cost(uses_distrib, stories)
+        df['build_cost_sqft'] = building_cost_per_sqft
         df['build_cost'] = df.build_cost_sqft * df.building_sqft
-
-        df['park_cost'] = (self.parking_cost_d[parking_config] *
-                           parkingstalls *
-                           self.parking_sqft_d[parking_config])
-
+        df['park_cost'] = park_cost
         df['cost'] = df.build_cost + df.park_cost
-        df['ave_cost_sqft'] = (
-            (df.cost / df.total_built_sqft) *
-            self.profit_factor)
+        df['ave_cost_sqft'] = ((df.cost / df.total_built_sqft)
+                               * self.profit_factor)
 
         if name == 'retail':
             df['ave_cost_sqft'][
@@ -752,30 +773,66 @@ class SqFtProFormaReference(object):
 
         return building_bulk
 
-    def _park_sqft(self, parking_config, parkingstalls):
+    def _park_sqft(self, parking_config, parking_stalls):
+        """
+        Generate building square footage required for a parking configuration
+
+        Parameters
+        ----------
+        parking_config : str
+            Name of parking configuration
+        parking_stalls : numeric
+            Number of parking stalls required
+
+        Returns
+        -------
+        park_sqft : numeric
+        """
 
         if parking_config in ['underground', 'deck']:
-            return parkingstalls * self.parking_sqft_d[parking_config]
+            return parking_stalls * self.parking_sqft_d[parking_config]
         if parking_config == 'surface':
             return 0
 
-    def _stories(self, parking_config, building_bulk, parkingstalls):
+    def _stories(self, parking_config, building_bulk, parking_stalls):
+        """
+        Calculates number of stories built at various FARs, given
+        building bulk, number of parking stalls, and parking configuration
+
+        Parameters
+        ----------
+        parking_config : str
+            Name of parking configuration
+        building_bulk : ndarray
+            Array of total square footage values for each FAR
+        parking_stalls : ndarray
+            Number of parking stalls required for each FAR
+
+        Returns
+        -------
+        stories : ndarray
+
+        """
 
         if parking_config == 'underground':
             stories = building_bulk / self.tiled_parcel_sizes
         if parking_config == 'deck':
-            stories = ((building_bulk + parkingstalls *
-                        self.parking_sqft_d[parking_config]) /
-                       self.tiled_parcel_sizes)
+            stories = ((building_bulk
+                        + parking_stalls
+                        * self.parking_sqft_d[parking_config])
+                       / self.tiled_parcel_sizes)
         if parking_config == 'surface':
-            stories = (building_bulk /
-                       (self.tiled_parcel_sizes - parkingstalls *
-                        self.parking_sqft_d[parking_config]))
+            stories = (building_bulk
+                       / (self.tiled_parcel_sizes
+                          - parking_stalls
+                          * self.parking_sqft_d[parking_config]))
             # not all fars support surface parking
             stories[stories < 0.0] = np.nan
             # I think we can assume that stories over 3
             # do not work with surface parking
             stories[stories > 5.0] = np.nan
+
+        stories /= self.parcel_coverage
 
         return stories
 
@@ -949,6 +1006,21 @@ class SqFtProFormaLookup(object):
         return result
 
     def _lookup_parking_cfg(self, form, parking_config, df):
+        """
+        This is the core square foot pro forma calculation. For each form and
+        parking configuration, generate DataFrame with profitability
+        information
+
+        Parameters
+        ----------
+        form : str
+        parking_config : str
+        df : DataFrame
+
+        Returns
+        -------
+        outdf : DataFrame
+        """
 
         dev_info = self.reference_dict[(form, parking_config)]
 
