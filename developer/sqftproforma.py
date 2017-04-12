@@ -1014,28 +1014,35 @@ class SqFtProFormaLookup(object):
         Parameters
         ----------
         form : str
+            Name of form
         parking_config : str
+            Name of parking configuration
         df : DataFrame
+            DataFrame of developable sites/parcels passed to pick() method
 
         Returns
         -------
         outdf : DataFrame
         """
+        # don't really mean to edit the df that's passed in
+        df = df.copy()
 
+        # Reference table for this form and parking configuration
         dev_info = self.reference_dict[(form, parking_config)]
 
+        # Helper values
         cost_sqft_col = columnize(dev_info.ave_cost_sqft.values)
         cost_sqft_index_col = columnize(dev_info.index.values)
         parking_sqft_ratio = columnize(dev_info.parking_sqft_ratio.values)
         heights = columnize(dev_info.height.values)
+        resratio = self.res_ratios[form]
+        nonresratio = 1.0 - resratio
 
-        # don't really mean to edit the df that's passed in
-        df = df.copy()
-
-        # weighted rent for this form
+        # ADD COLUMNS
         df['weighted_rent'] = np.dot(df[self.uses], self.forms[form])
 
         # weighted occupancy for this form
+        # TODO expose df to modifier functions here
         occupancies = ['occ_{}'.format(use) for use in self.uses]
         if set(occupancies).issubset(set(df.columns.tolist())):
             df['weighted_occupancy'] = np.dot(
@@ -1044,38 +1051,25 @@ class SqFtProFormaLookup(object):
         else:
             df['weighted_occupancy'] = 1.0
 
-        # min between max_fars and max_heights
-        df['max_far_from_heights'] = (df.max_height /
-                                      self.height_per_story *
-                                      self.parcel_coverage)
-
-        resratio = self.res_ratios[form]
-        nonresratio = 1.0 - resratio
-
-        # now also minimize with max_dua from zoning - since this pro forma is
-        # really geared toward per sqft metrics, this is a bit tricky.  dua
-        # is converted to floorspace and everything just works (floor space
-        # will get covered back to units in developer.pick() but we need to
-        # test the profitability of the floorspace allowed by max_dua here.
+        # ZONING FILTERS
+        # Minimize between max_fars and max_heights
+        df['max_far_from_heights'] = (df.max_height
+                                      / self.height_per_story
+                                      * self.parcel_coverage)
 
         df['min_max_fars'] = self._min_max_fars(df, resratio)
 
         if self.only_built:
             df = df.query('min_max_fars > 0 and parcel_size > 0')
 
+        # turn fars and heights into nans which are not allowed by zoning
+        # (so we can fillna with one of the other zoning constraints)
         fars = np.repeat(cost_sqft_index_col, len(df.index), axis=1)
-
-        # turn fars into nans which are not allowed by zoning
-        # (so we can fillna with one of the other zoning constraints)
         fars[fars > df.min_max_fars.values + .01] = np.nan
-
-        # same thing for heights
         heights = np.repeat(heights, len(df.index), axis=1)
-
-        # turn heights into nans which are not allowed by zoning
-        # (so we can fillna with one of the other zoning constraints)
         fars[heights > df.max_height.values + .01] = np.nan
 
+        # PROFIT CALCULATION
         # parcel sizes * possible fars
         building_bulks = fars * df.parcel_size.values
 
@@ -1094,6 +1088,7 @@ class SqFtProFormaLookup(object):
                             / self.cap_rate)
 
         # profit for each form
+        # TODO expose functions here
         profit = building_revenue - total_costs
 
         profit = profit.astype('float')
@@ -1134,6 +1129,22 @@ class SqFtProFormaLookup(object):
         return outdf
 
     def _min_max_fars(self, df, resratio):
+        """
+        In case max_dua is passed in the DataFrame,
+        now also minimize with max_dua from zoning - since this pro forma is
+        really geared toward per sqft metrics, this is a bit tricky.  dua
+        is converted to floorspace and everything just works (floor space
+        will get covered back to units in developer.pick() but we need to
+        test the profitability of the floorspace allowed by max_dua here.
+        Parameters
+        ----------
+        df
+        resratio
+
+        Returns
+        -------
+
+        """
 
         if 'max_dua' in df.columns and resratio > 0:
             # if max_dua is in the data frame, ave_unit_size must also be there
