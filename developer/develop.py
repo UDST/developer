@@ -174,9 +174,12 @@ class Developer(object):
             DataFrame of buildings to add.  These buildings are rows from the
             DataFrame that is returned from feasibility.
         """
+        df = self.feasibility
+        empty_df = len(df) == 0 or df.empty
+        empty_warn = "WARNING THERE ARE NO FEASIBLE BUILDINGS TO CHOOSE FROM"
 
-        if self._exit_check() is True:
-            # Check for empty DataFrames
+        if empty_df:
+            print(empty_warn)
             return
 
         # Get DataFrame of potential buildings from SqFtProForma steps
@@ -184,8 +187,8 @@ class Developer(object):
         df = self._remove_infeasible_buildings(df)
         df = self._calculate_net_units(df)
 
-        if len(df) == 0:
-            print("WARNING THERE ARE NO FEASIBLE BUILDING TO CHOOSE FROM")
+        if empty_df:
+            print(empty_warn)
             return
 
         print("Sum of net units that are profitable: {:,}".format(
@@ -202,23 +205,6 @@ class Developer(object):
         new_df = self._prepare_new_buildings(df, build_idx)
 
         return new_df
-
-    def _exit_check(self):
-        if self.forms is None:
-            if len(self.feasibility) == 0 or self.feasibility.size == 0:
-                # no feasible buildings, might as well bail
-                return True
-        elif isinstance(self.forms, list):
-            for form in self.forms:
-                df = self.feasibility[form]
-                if 'max_profit' not in df.columns.tolist():
-                    return True
-        else:
-            df = self.feasibility[self.forms]
-            if len(df) == 0 or df.size == 0:
-                # no feasible buildings, might as well bail
-                return True
-        return False
 
     def _get_dataframe_of_buildings(self):
         """
@@ -312,6 +298,8 @@ class Developer(object):
         -------
         df : DataFrame
         """
+        if len(df) == 0 or df.empty:
+            return df
 
         df = df[df.max_profit_far > 0]
         self.ave_unit_size[
@@ -343,6 +331,8 @@ class Developer(object):
         -------
         df : DataFrame
         """
+        if len(df) == 0 or df.empty:
+            return df
 
         if self.residential:
             df['net_units'] = df.residential_units - df.current_units

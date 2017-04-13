@@ -1136,6 +1136,7 @@ class SqFtProFormaLookup(object):
         is converted to floorspace and everything just works (floor space
         will get covered back to units in developer.pick() but we need to
         test the profitability of the floorspace allowed by max_dua here.
+        
         Parameters
         ----------
         df
