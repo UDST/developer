@@ -419,7 +419,8 @@ class SqFtProForma(object):
         logger.debug('serializing SqftProForma model to YAML')
         return utils.convert_to_yaml(self.to_dict, str_or_buffer)
 
-    def lookup(self, form, df):
+    def lookup(self, form, df, modify_df=None, modify_revenues=None,
+               modify_costs=None, modify_profits=None):
         """
         This function does the developer model lookups for all the actual input
         data.
@@ -431,6 +432,18 @@ class SqFtProForma(object):
         df: dataframe
             Pass in a single data frame which is indexed by parcel_id and has
             the following columns
+        modify_df : function
+            Function to modify lookup DataFrame before profit calculations.
+            Must have (self, form, df) as parameters.
+        modify_revenues : function
+            Function to modify revenue array during profit calculations.
+            Must have (self, form, df, revenues) as parameters.
+        modify_costs : function
+            Function to modify cost array during profit calculations.
+            Must have (self, form, df, costs) as parameters.
+        modify_profits : function
+            Function to modify profit array during profit calculations.
+            Must have (self, form, df, profits) as parameters.
 
         Input Dataframe Columns
         rent : dataframe
@@ -488,7 +501,8 @@ class SqFtProForma(object):
         """
 
         lookup_object = SqFtProFormaLookup(**self.__dict__)
-        return lookup_object.lookup(form, df)
+        return lookup_object.lookup(form, df, modify_df, modify_revenues,
+                                    modify_costs, modify_profits)
 
     def get_debug_info(self, form, parking_config):
         """
@@ -858,7 +872,8 @@ class SqFtProFormaLookup(object):
         self.pass_through = pass_through
         self.simple_zoning = simple_zoning
 
-    def lookup(self, form, df):
+    def lookup(self, form, df, modify_df, modify_revenues,
+               modify_costs, modify_profits):
         """
         This function does the developer model lookups for all the actual input
         data.
@@ -867,10 +882,22 @@ class SqFtProFormaLookup(object):
         ----------
         form : string
             One of the forms specified in the configuration file
-        df: dataframe
+        df : DataFrame
             Pass in a single data frame which is indexed by parcel_id and has
             the following columns
-
+        modify_df : function
+            Function to modify lookup DataFrame before profit calculations.
+            Must have (self, form, df) as parameters.
+        modify_revenues : function
+            Function to modify revenue array during profit calculations.
+            Must have (self, form, df, revenues) as parameters.
+        modify_costs : function
+            Function to modify cost array during profit calculations.
+            Must have (self, form, df, costs) as parameters.
+        modify_profits : function
+            Function to modify profit array during profit calculations.
+            Must have (self, form, df, profits) as parameters.
+            
         Input Dataframe Columns
         rent : dataframe
             A set of columns, one for each of the uses passed in the
@@ -885,7 +912,7 @@ class SqFtProFormaLookup(object):
             A series representing the maximum far allowed by zoning.  Buildings
             will not be built above these fars.
         max_height : series
-            A series representing the maxmium height allowed by zoning.
+            A series representing the maximum height allowed by zoning.
             Buildings will not be built above these heights.  Will pick between
             the min of the far and height, will ignore on of them if one is
             nan, but will not build if both are nan.
@@ -897,11 +924,6 @@ class SqFtProFormaLookup(object):
             This is required if max_dua is passed above, otherwise it is
             optional. This is the same as the parameter to Developer.pick()
             (it should be the same series).
-        occ : dataframe, optional
-            A set of columns, one for each of the uses passed in the
-            configuration. Values are proportion of new development that would
-            be expected to be occupied. Same names as rent columns, with "occ_"
-            prefix. Typical names would be "occ_residential", "occ_retail", etc
 
         Returns
         -------
@@ -935,7 +957,9 @@ class SqFtProFormaLookup(object):
             df = self._simple_zoning(form, df)
 
         lookup = pd.concat(
-            self._lookup_parking_cfg(form, parking_config, df)
+            self._lookup_parking_cfg(form, parking_config, df, modify_df,
+                                     modify_revenues, modify_costs,
+                                     modify_profits)
             for parking_config in self.parking_configs)
 
         if len(lookup) == 0:
@@ -1005,7 +1029,9 @@ class SqFtProFormaLookup(object):
 
         return result
 
-    def _lookup_parking_cfg(self, form, parking_config, df):
+    def _lookup_parking_cfg(self, form, parking_config, df,
+                            modify_df, modify_revenues, modify_costs,
+                            modify_profits):
         """
         This is the core square foot pro forma calculation. For each form and
         parking configuration, generate DataFrame with profitability
@@ -1019,6 +1045,18 @@ class SqFtProFormaLookup(object):
             Name of parking configuration
         df : DataFrame
             DataFrame of developable sites/parcels passed to pick() method
+        modify_df : func
+            Function to modify lookup DataFrame before profit calculations.
+            Must have (self, form, df) as parameters.
+        modify_revenues : func
+            Function to modify revenue array during profit calculations.
+            Must have (self, form, df, revenues) as parameters.
+        modify_costs : func
+            Function to modify cost array during profit calculations.
+            Must have (self, form, df, costs) as parameters.
+        modify_profits : func
+            Function to modify profit array during profit calculations.
+            Must have (self, form, df, profits) as parameters.
 
         Returns
         -------
@@ -1037,19 +1075,10 @@ class SqFtProFormaLookup(object):
         heights = columnize(dev_info.height.values)
         resratio = self.res_ratios[form]
         nonresratio = 1.0 - resratio
-
-        # ADD COLUMNS
         df['weighted_rent'] = np.dot(df[self.uses], self.forms[form])
 
-        # weighted occupancy for this form
-        # TODO expose df to modifier functions here
-        occupancies = ['occ_{}'.format(use) for use in self.uses]
-        if set(occupancies).issubset(set(df.columns.tolist())):
-            df['weighted_occupancy'] = np.dot(
-                df[occupancies],
-                self.forms[form])
-        else:
-            df['weighted_occupancy'] = 1.0
+        # Allow for user modification of DataFrame here
+        df = modify_df(self, form, df) if modify_df else df
 
         # ZONING FILTERS
         # Minimize between max_fars and max_heights
@@ -1084,12 +1113,20 @@ class SqFtProFormaLookup(object):
                             * (1 - parking_sqft_ratio)
                             * self.building_efficiency
                             * df.weighted_rent.values
-                            * df.weighted_occupancy.values
                             / self.cap_rate)
 
-        # profit for each form
-        # TODO expose functions here
+        # profit for each form, including user modification of
+        # revenues, costs, and/or profits
+        building_revenue = (modify_revenues(self, form, df, building_revenue)
+                            if modify_revenues else building_revenue)
+
+        total_costs = (modify_costs(self, form, df, total_costs)
+                       if modify_costs else total_costs)
+
         profit = building_revenue - total_costs
+
+        profit = (modify_profits(self, form, df, profit)
+                  if modify_profits else profit)
 
         profit = profit.astype('float')
         profit[np.isnan(profit)] = -np.inf

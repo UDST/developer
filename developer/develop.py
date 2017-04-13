@@ -175,10 +175,9 @@ class Developer(object):
             DataFrame that is returned from feasibility.
         """
         df = self.feasibility
-        empty_df = len(df) == 0 or df.empty
         empty_warn = "WARNING THERE ARE NO FEASIBLE BUILDINGS TO CHOOSE FROM"
 
-        if empty_df:
+        if len(df) == 0 or df.empty:
             print(empty_warn)
             return
 
@@ -187,7 +186,7 @@ class Developer(object):
         df = self._remove_infeasible_buildings(df)
         df = self._calculate_net_units(df)
 
-        if empty_df:
+        if len(df) == 0 or df.empty:
             print(empty_warn)
             return
 
