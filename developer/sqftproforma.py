@@ -897,7 +897,7 @@ class SqFtProFormaLookup(object):
         modify_profits : function
             Function to modify profit array during profit calculations.
             Must have (self, form, df, profits) as parameters.
-            
+
         Input Dataframe Columns
         rent : dataframe
             A set of columns, one for each of the uses passed in the
@@ -1173,7 +1173,7 @@ class SqFtProFormaLookup(object):
         is converted to floorspace and everything just works (floor space
         will get covered back to units in developer.pick() but we need to
         test the profitability of the floorspace allowed by max_dua here.
-        
+
         Parameters
         ----------
         df
