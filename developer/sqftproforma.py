@@ -592,7 +592,7 @@ class SqFtProForma(object):
         parking_config : str
             Name of parking configuration
         df : DataFrame
-            DataFrame of developable sites/parcels passed to pick() method
+            DataFrame of developable sites/parcels passed to lookup() method
         modify_df : func
             Function to modify lookup DataFrame before profit calculations.
             Must have (self, form, df) as parameters.
@@ -725,12 +725,14 @@ class SqFtProForma(object):
 
         Parameters
         ----------
-        df
-        resratio
+        df : DataFrame
+            DataFrame of developable sites/parcels passed to lookup() method
+        resratio : numeric
+            Residential ratio for this form
 
         Returns
         -------
-
+        Series
         """
 
         if 'max_dua' in df.columns and resratio > 0:
