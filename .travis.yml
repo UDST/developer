@@ -19,8 +19,8 @@ install:
 - source activate test-environment
 - conda list
 - pip install pycodestyle
-- pip install https://github.com/UDST/orca/archive/master.zip
-- pip install https://github.com/pksohn/urbansim/archive/python3.zip
+- pip install orca
+- pip install https://github.com/udst/urbansim/archive/python3.zip
 - pip install osmnet pandana
 - pip install .
 - cd .. && git clone git@github.com:urbansim/urbansim_parcels.git
