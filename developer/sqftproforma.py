@@ -152,6 +152,8 @@ class SqFtProForma(object):
                  cap_rate, parking_rates, sqft_per_rate, parking_configs,
                  costs, heights_for_costs, parking_sqft_d, parking_cost_d,
                  height_per_story, max_retail_height, max_industrial_height,
+                 construction_months, construction_sqft_for_months,
+                 loan_to_cost_ratio, drawdown_factor, interest_rate, loan_fees,
                  residential_to_yearly=True, forms_to_test=None,
                  only_built=True, pass_through=None, simple_zoning=False,
                  parcel_filter=None
@@ -176,6 +178,12 @@ class SqFtProForma(object):
         self.height_per_story = height_per_story
         self.max_retail_height = max_retail_height
         self.max_industrial_height = max_industrial_height
+        self.construction_months = construction_months
+        self.construction_sqft_for_months = construction_sqft_for_months
+        self.loan_to_cost_ratio = loan_to_cost_ratio
+        self.drawdown_factor = drawdown_factor
+        self.interest_rate = interest_rate
+        self.loan_fees = loan_fees
 
         self.residential_to_yearly = residential_to_yearly
         self.forms_to_test = forms_to_test or sorted(self.forms.keys())
@@ -245,6 +253,9 @@ class SqFtProForma(object):
                 self.residential_uses].sum()
         self.costs = np.transpose(
             np.array([self.costs[use] for use in self.uses]))
+        self.construction_months = np.transpose(
+            np.array([self.construction_months[use] for use in self.uses])
+        )
 
     @classmethod
     def from_yaml(cls, yaml_str=None, str_or_buffer=None):
@@ -275,6 +286,12 @@ class SqFtProForma(object):
             cfg['parking_sqft_d'], cfg['parking_cost_d'],
             cfg['height_per_story'], cfg['max_retail_height'],
             cfg['max_industrial_height'],
+            cfg['construction_months'],
+            cfg['construction_sqft_for_months'],
+            cfg['loan_to_cost_ratio'],
+            cfg['drawdown_factor'],
+            cfg['interest_rate'],
+            cfg['loan_fees'],
             cfg.get('residential_to_yearly', True),
             cfg.get('forms_to_test', None),
             cfg.get('only_built', True),
@@ -331,7 +348,17 @@ class SqFtProForma(object):
                                   'mixedresidential', 'office',
                                   'residential', 'retail'],
                 'pass_through': [],
-                'simple_zoning': False
+                'simple_zoning': False,
+                'construction_months': {
+                    'industrial': [12.0, 14.0, 18.0, 24.0],
+                    'office': [12.0, 14.0, 18.0, 24.0],
+                    'residential': [12.0, 14.0, 18.0, 24.0],
+                    'retail': [12.0, 14.0, 18.0, 24.0]},
+                'construction_sqft_for_months': [10000, 20000, 50000, np.inf],
+                'loan_to_cost_ratio': .7,
+                'drawdown_factor': .6,
+                'interest_rate': .05,
+                'loan_fees': .02
                 }
 
     @classmethod
@@ -364,7 +391,9 @@ class SqFtProForma(object):
                        'parking_sqft_d', 'parking_cost_d', 'height_per_story',
                        'max_retail_height', 'max_industrial_height',
                        'residential_to_yearly', 'parcel_filter', 'only_built',
-                       'forms_to_test', 'pass_through', 'simple_zoning']
+                       'forms_to_test', 'pass_through', 'simple_zoning',
+                       'construction_sqft_for_months', 'loan_to_cost_ratio',
+                       'drawdown_factor', 'interest_rate', 'loan_fees']
 
         results = {}
         for attribute in unconverted:
@@ -396,6 +425,13 @@ class SqFtProForma(object):
             values = costs_transposed[index]
             costs[use] = values.tolist()
         results['costs'] = costs
+
+        time = {}
+        time_transposed = self.construction_months.transpose()
+        for index, use in enumerate(self.uses):
+            values = time_transposed[index]
+            time[use] = values.tolist()
+        results['construction_months'] = time
 
         return results
 
@@ -621,6 +657,7 @@ class SqFtProForma(object):
         cost_sqft_index_col = columnize(dev_info.index.values)
         parking_sqft_ratio = columnize(dev_info.parking_sqft_ratio.values)
         heights = columnize(dev_info.height.values)
+        months = columnize(dev_info.construction_months.values)
         resratio = self.res_ratios[form]
         nonresratio = 1.0 - resratio
         df['weighted_rent'] = np.dot(df[self.uses], self.forms[form])
@@ -654,7 +691,20 @@ class SqFtProForma(object):
         building_costs = building_bulks * cost_sqft_col
 
         # add cost to buy the current building
-        total_costs = building_costs + df.land_cost.values
+        total_construction_costs = building_costs + df.land_cost.values
+
+        # Financing costs
+        loan_amount = total_construction_costs * self.loan_to_cost_ratio
+        months = np.repeat(months, len(df.index), axis=1)
+        # construction_period = self._construction_time(self.forms[form],
+        #                                               building_bulks)
+        interest = (loan_amount
+                    * self.drawdown_factor
+                    * (self.interest_rate / 12 * months))
+        points = loan_amount * self.loan_fees
+        total_financing_costs = interest + points
+        total_development_costs = (total_construction_costs
+                                   + total_financing_costs)
 
         # rent to make for the new building
         building_revenue = (building_bulks
@@ -669,10 +719,11 @@ class SqFtProForma(object):
         building_revenue = (modify_revenues(self, form, df, building_revenue)
                             if modify_revenues else building_revenue)
 
-        total_costs = (modify_costs(self, form, df, total_costs)
-                       if modify_costs else total_costs)
+        total_development_costs = (
+            modify_costs(self, form, df, total_development_costs)
+            if modify_costs else total_development_costs)
 
-        profit = building_revenue - total_costs
+        profit = building_revenue - total_development_costs
 
         profit = (modify_profits(self, form, df, profit)
                   if modify_profits else profit)
@@ -690,11 +741,13 @@ class SqFtProForma(object):
             'parking_ratio': parking_sqft_ratio[maxprofitind].flatten(),
             'stories': twod_get(maxprofitind,
                                 heights) / self.height_per_story,
-            'total_cost': twod_get(maxprofitind, total_costs),
+            'total_cost': twod_get(maxprofitind, total_development_costs),
             'building_revenue': twod_get(maxprofitind, building_revenue),
             'max_profit_far': twod_get(maxprofitind, fars),
             'max_profit': twod_get(maxprofitind, profit),
-            'parking_config': parking_config
+            'parking_config': parking_config,
+            'construction_time': twod_get(maxprofitind, months),
+            'financing_cost': twod_get(maxprofitind, total_financing_costs)
         }, index=df.index)
 
         if self.pass_through:
@@ -873,7 +926,8 @@ class SqFtProFormaReference(object):
                  profit_factor, parcel_coverage, parking_rates, sqft_per_rate,
                  parking_configs, costs, heights_for_costs, parking_sqft_d,
                  parking_cost_d, height_per_story, max_retail_height,
-                 max_industrial_height, **kwargs):
+                 max_industrial_height, construction_sqft_for_months,
+                 construction_months, **kwargs):
 
         self.fars = fars
         self.parcel_sizes = parcel_sizes
@@ -890,6 +944,8 @@ class SqFtProFormaReference(object):
         self.height_per_story = height_per_story
         self.max_retail_height = max_retail_height
         self.max_industrial_height = max_industrial_height
+        self.construction_sqft_for_months = construction_sqft_for_months
+        self.construction_months = construction_months
 
         self.tiled_parcel_sizes = columnize(
             np.repeat(self.parcel_sizes, self.fars.size))
@@ -966,12 +1022,18 @@ class SqFtProFormaReference(object):
         # Array of building cost per square foot for each FAR
         building_cost_per_sqft = self._building_cost(uses_distrib, stories)
 
+        total_built_sqft = building_bulk + park_sqft
+
+        # Array of construction time for each FAR
+        construction_months = self._construction_time(uses_distrib,
+                                                      total_built_sqft)
+
         df['far'] = self.fars
         df['pclsz'] = self.tiled_parcel_sizes
         df['building_sqft'] = building_bulk
         df['spaces'] = parking_stalls
         df['park_sqft'] = park_sqft
-        df['total_built_sqft'] = df.building_sqft + df.park_sqft
+        df['total_built_sqft'] = total_built_sqft
         df['parking_sqft_ratio'] = df.park_sqft / df.total_built_sqft
         df['stories'] = np.ceil(stories)
         df['height'] = df.stories * self.height_per_story
@@ -981,6 +1043,7 @@ class SqFtProFormaReference(object):
         df['cost'] = df.build_cost + df.park_cost
         df['ave_cost_sqft'] = ((df.cost / df.total_built_sqft)
                                * self.profit_factor)
+        df['construction_months'] = construction_months
 
         if name == 'retail':
             df['ave_cost_sqft'][
@@ -1114,3 +1177,29 @@ class SqFtProFormaReference(object):
         stories /= self.parcel_coverage
 
         return stories
+
+    def _construction_time(self, use_mix, building_bulks):
+        """
+        Calculate construction time in months for each development site.
+
+        Parameters
+        ----------
+        use_mix : array
+            The mix of uses for this form
+        building_bulks : array
+            Array of square footage for each potential building
+
+        Returns
+        -------
+        construction_times : array
+        """
+
+        # Look at square footage and return matching index in list of
+        # construction times
+        month_indices = np.searchsorted(self.construction_sqft_for_months,
+                                        building_bulks)
+        # Get the construction time for each dev site, for all uses
+        months_array_all_uses = self.construction_months[month_indices]
+        # Dot product to get appropriate time for uses being evaluated
+        construction_times = np.dot(months_array_all_uses, use_mix)
+        return construction_times
