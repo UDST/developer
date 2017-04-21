@@ -23,7 +23,7 @@ install:
 - pip install https://github.com/udst/urbansim/archive/python3.zip
 - pip install osmnet pandana
 - pip install .
-- cd .. && git clone git@github.com:urbansim/urbansim_parcels.git
+- cd .. && git clone -b market_research git@github.com:urbansim/urbansim_parcels.git
 - pip install ./urbansim_parcels
 - cd "$TRAVIS_BUILD_DIR"
 
