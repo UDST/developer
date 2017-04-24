@@ -696,8 +696,6 @@ class SqFtProForma(object):
         # Financing costs
         loan_amount = total_construction_costs * self.loan_to_cost_ratio
         months = np.repeat(months, len(df.index), axis=1)
-        # construction_period = self._construction_time(self.forms[form],
-        #                                               building_bulks)
         interest = (loan_amount
                     * self.drawdown_factor
                     * (self.interest_rate / 12 * months))
