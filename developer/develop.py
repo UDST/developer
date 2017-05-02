@@ -460,7 +460,11 @@ class Developer(object):
         """
 
         new_df = df.loc[build_idx]
-        new_df.index.name = "parcel_id"
+
+        drop = True
+        if 'parcel_id' not in df.columns:
+            new_df.index.name = "parcel_id"
+            drop = False
 
         if self.year is not None:
             new_df["year_built"] = self.year
@@ -471,4 +475,4 @@ class Developer(object):
 
         new_df["stories"] = new_df.stories.apply(np.ceil)
 
-        return new_df.reset_index()
+        return new_df.reset_index(drop=drop)
