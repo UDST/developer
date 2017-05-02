@@ -457,7 +457,7 @@ class SqFtProForma(object):
         return utils.convert_to_yaml(self.to_dict, str_or_buffer)
 
     def lookup(self, form, df, modify_df=None, modify_revenues=None,
-               modify_costs=None, modify_profits=None):
+               modify_costs=None, modify_profits=None, **kwargs):
         """
         This function does the developer model lookups for all the actual input
         data.
