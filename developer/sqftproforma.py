@@ -1,4 +1,5 @@
 from __future__ import print_function, division, absolute_import
+import inspect
 import numpy as np
 import pandas as pd
 import logging
@@ -151,6 +152,8 @@ class SqFtProForma(object):
                  cap_rate, parking_rates, sqft_per_rate, parking_configs,
                  costs, heights_for_costs, parking_sqft_d, parking_cost_d,
                  height_per_story, max_retail_height, max_industrial_height,
+                 construction_months, construction_sqft_for_months,
+                 loan_to_cost_ratio, drawdown_factor, interest_rate, loan_fees,
                  residential_to_yearly=True, forms_to_test=None,
                  only_built=True, pass_through=None, simple_zoning=False,
                  parcel_filter=None
@@ -175,6 +178,12 @@ class SqFtProForma(object):
         self.height_per_story = height_per_story
         self.max_retail_height = max_retail_height
         self.max_industrial_height = max_industrial_height
+        self.construction_months = construction_months
+        self.construction_sqft_for_months = construction_sqft_for_months
+        self.loan_to_cost_ratio = loan_to_cost_ratio
+        self.drawdown_factor = drawdown_factor
+        self.interest_rate = interest_rate
+        self.loan_fees = loan_fees
 
         self.residential_to_yearly = residential_to_yearly
         self.forms_to_test = forms_to_test or sorted(self.forms.keys())
@@ -244,6 +253,9 @@ class SqFtProForma(object):
                 self.residential_uses].sum()
         self.costs = np.transpose(
             np.array([self.costs[use] for use in self.uses]))
+        self.construction_months = np.transpose(
+            np.array([self.construction_months[use] for use in self.uses])
+        )
 
     @classmethod
     def from_yaml(cls, yaml_str=None, str_or_buffer=None):
@@ -274,6 +286,12 @@ class SqFtProForma(object):
             cfg['parking_sqft_d'], cfg['parking_cost_d'],
             cfg['height_per_story'], cfg['max_retail_height'],
             cfg['max_industrial_height'],
+            cfg['construction_months'],
+            cfg['construction_sqft_for_months'],
+            cfg['loan_to_cost_ratio'],
+            cfg['drawdown_factor'],
+            cfg['interest_rate'],
+            cfg['loan_fees'],
             cfg.get('residential_to_yearly', True),
             cfg.get('forms_to_test', None),
             cfg.get('only_built', True),
@@ -330,7 +348,17 @@ class SqFtProForma(object):
                                   'mixedresidential', 'office',
                                   'residential', 'retail'],
                 'pass_through': [],
-                'simple_zoning': False
+                'simple_zoning': False,
+                'construction_months': {
+                    'industrial': [12.0, 14.0, 18.0, 24.0],
+                    'office': [12.0, 14.0, 18.0, 24.0],
+                    'residential': [12.0, 14.0, 18.0, 24.0],
+                    'retail': [12.0, 14.0, 18.0, 24.0]},
+                'construction_sqft_for_months': [10000, 20000, 50000, np.inf],
+                'loan_to_cost_ratio': .7,
+                'drawdown_factor': .6,
+                'interest_rate': .05,
+                'loan_fees': .02
                 }
 
     @classmethod
@@ -363,7 +391,9 @@ class SqFtProForma(object):
                        'parking_sqft_d', 'parking_cost_d', 'height_per_story',
                        'max_retail_height', 'max_industrial_height',
                        'residential_to_yearly', 'parcel_filter', 'only_built',
-                       'forms_to_test', 'pass_through', 'simple_zoning']
+                       'forms_to_test', 'pass_through', 'simple_zoning',
+                       'construction_sqft_for_months', 'loan_to_cost_ratio',
+                       'drawdown_factor', 'interest_rate', 'loan_fees']
 
         results = {}
         for attribute in unconverted:
@@ -396,6 +426,13 @@ class SqFtProForma(object):
             costs[use] = values.tolist()
         results['costs'] = costs
 
+        time = {}
+        time_transposed = self.construction_months.transpose()
+        for index, use in enumerate(self.uses):
+            values = time_transposed[index]
+            time[use] = values.tolist()
+        results['construction_months'] = time
+
         return results
 
     def to_yaml(self, str_or_buffer=None):
@@ -419,7 +456,8 @@ class SqFtProForma(object):
         logger.debug('serializing SqftProForma model to YAML')
         return utils.convert_to_yaml(self.to_dict, str_or_buffer)
 
-    def lookup(self, form, df):
+    def lookup(self, form, df, modify_df=None, modify_revenues=None,
+               modify_costs=None, modify_profits=None, **kwargs):
         """
         This function does the developer model lookups for all the actual input
         data.
@@ -428,9 +466,21 @@ class SqFtProForma(object):
         ----------
         form : string
             One of the forms specified in the configuration file
-        df: dataframe
+        df : DataFrame
             Pass in a single data frame which is indexed by parcel_id and has
             the following columns
+        modify_df : function
+            Function to modify lookup DataFrame before profit calculations.
+            Must have (self, form, df) as parameters.
+        modify_revenues : function
+            Function to modify revenue ndarray during profit calculations.
+            Must have (self, form, df, revenues) as parameters.
+        modify_costs : function
+            Function to modify cost ndarray during profit calculations.
+            Must have (self, form, df, costs) as parameters.
+        modify_profits : function
+            Function to modify profit ndarray during profit calculations.
+            Must have (self, form, df, profits) as parameters.
 
         Input Dataframe Columns
         rent : dataframe
@@ -446,7 +496,7 @@ class SqFtProForma(object):
             A series representing the maximum far allowed by zoning.  Buildings
             will not be built above these fars.
         max_height : series
-            A series representing the maxmium height allowed by zoning.
+            A series representing the maximum height allowed by zoning.
             Buildings will not be built above these heights.  Will pick between
             the min of the far and height, will ignore on of them if one is
             nan, but will not build if both are nan.
@@ -487,8 +537,288 @@ class SqFtProForma(object):
             max_far and max_height from the input dataframe).
         """
 
-        lookup_object = SqFtProFormaLookup(**self.__dict__)
-        return lookup_object.lookup(form, df)
+        if self.simple_zoning:
+            df = self._simple_zoning(form, df)
+
+        lookup = pd.concat(
+            self._lookup_parking_cfg(form, parking_config, df, modify_df,
+                                     modify_revenues, modify_costs,
+                                     modify_profits)
+            for parking_config in self.parking_configs)
+
+        if len(lookup) == 0:
+            return pd.DataFrame()
+
+        result = self._max_profit_parking(lookup)
+
+        if self.residential_to_yearly and "residential" in self.pass_through:
+            result["residential"] /= self.cap_rate
+
+        return result
+
+    @staticmethod
+    def _simple_zoning(form, df):
+        """
+        Replaces max_height and either max_far or max_dua with NaNs
+
+        Parameters
+        ----------
+        form : str
+            Name of form passed to lookup method
+        df : DataFrame
+            DataFrame passed to lookup method
+
+        Returns
+        -------
+        df : DataFrame
+        """
+
+        if form == "residential":
+            # these are new computed in the effective max_dua method
+            df["max_far"] = pd.Series()
+            df["max_height"] = pd.Series()
+        else:
+            # these are new computed in the effective max_far method
+            df["max_dua"] = pd.Series()
+            df["max_height"] = pd.Series()
+
+        return df
+
+    @staticmethod
+    def _max_profit_parking(df):
+        """
+        Return parcels DataFrame with parking configuration that maximizes
+        profit
+
+        Parameters
+        ----------
+        df: DataFrame
+            DataFrame passed to lookup method
+
+        Returns
+        -------
+        result : DataFrame
+        """
+
+        max_profit_ind = df.pivot(
+            columns="parking_config",
+            values="max_profit").idxmax(axis=1).to_frame("parking_config")
+
+        df.set_index(["parking_config"], append=True, inplace=True)
+        max_profit_ind.set_index(["parking_config"], append=True,
+                                 inplace=True)
+
+        # get the max_profit idx
+        result = df.loc[max_profit_ind.index].reset_index(1)
+
+        return result
+
+    def _lookup_parking_cfg(self, form, parking_config, df,
+                            modify_df, modify_revenues, modify_costs,
+                            modify_profits):
+        """
+        This is the core square foot pro forma calculation. For each form and
+        parking configuration, generate DataFrame with profitability
+        information
+
+        Parameters
+        ----------
+        form : str
+            Name of form
+        parking_config : str
+            Name of parking configuration
+        df : DataFrame
+            DataFrame of developable sites/parcels passed to lookup() method
+        modify_df : func
+            Function to modify lookup DataFrame before profit calculations.
+            Must have (self, form, df) as parameters.
+        modify_revenues : func
+            Function to modify revenue ndarray during profit calculations.
+            Must have (self, form, df, revenues) as parameters.
+        modify_costs : func
+            Function to modify cost ndarray during profit calculations.
+            Must have (self, form, df, costs) as parameters.
+        modify_profits : func
+            Function to modify profit ndarray during profit calculations.
+            Must have (self, form, df, profits) as parameters.
+
+        Returns
+        -------
+        outdf : DataFrame
+        """
+        # don't really mean to edit the df that's passed in
+        df = df.copy()
+
+        # Reference table for this form and parking configuration
+        dev_info = self.reference_dict[(form, parking_config)]
+
+        # Helper values
+        cost_sqft_col = columnize(dev_info.ave_cost_sqft.values)
+        cost_sqft_index_col = columnize(dev_info.index.values)
+        parking_sqft_ratio = columnize(dev_info.parking_sqft_ratio.values)
+        heights = columnize(dev_info.height.values)
+        months = columnize(dev_info.construction_months.values)
+        resratio = self.res_ratios[form]
+        nonresratio = 1.0 - resratio
+        df['weighted_rent'] = np.dot(df[self.uses], self.forms[form])
+
+        # Allow for user modification of DataFrame here
+        df = modify_df(self, form, df) if modify_df else df
+
+        # ZONING FILTERS
+        # Minimize between max_fars and max_heights
+        df['max_far_from_heights'] = (df.max_height
+                                      / self.height_per_story
+                                      * self.parcel_coverage)
+
+        df['min_max_fars'] = self._min_max_fars(df, resratio)
+
+        if self.only_built:
+            df = df.query('min_max_fars > 0 and parcel_size > 0')
+
+        # turn fars and heights into nans which are not allowed by zoning
+        # (so we can fillna with one of the other zoning constraints)
+        fars = np.repeat(cost_sqft_index_col, len(df.index), axis=1)
+        fars[fars > df.min_max_fars.values + .01] = np.nan
+        heights = np.repeat(heights, len(df.index), axis=1)
+        fars[heights > df.max_height.values + .01] = np.nan
+
+        # PROFIT CALCULATION
+        # parcel sizes * possible fars
+        building_bulks = fars * df.parcel_size.values
+
+        # cost to build the new building
+        building_costs = building_bulks * cost_sqft_col
+
+        # add cost to buy the current building
+        total_construction_costs = building_costs + df.land_cost.values
+
+        # Financing costs
+        loan_amount = total_construction_costs * self.loan_to_cost_ratio
+        months = np.repeat(months, len(df.index), axis=1)
+        interest = (loan_amount
+                    * self.drawdown_factor
+                    * (self.interest_rate / 12 * months))
+        points = loan_amount * self.loan_fees
+        total_financing_costs = interest + points
+        total_development_costs = (total_construction_costs
+                                   + total_financing_costs)
+
+        # rent to make for the new building
+        building_revenue = (building_bulks
+                            * (1 - parking_sqft_ratio)
+                            * self.building_efficiency
+                            * df.weighted_rent.values
+                            / self.cap_rate)
+
+        # profit for each form, including user modification of
+        # revenues, costs, and/or profits
+
+        building_revenue = (modify_revenues(self, form, df, building_revenue)
+                            if modify_revenues else building_revenue)
+
+        total_development_costs = (
+            modify_costs(self, form, df, total_development_costs)
+            if modify_costs else total_development_costs)
+
+        profit = building_revenue - total_development_costs
+
+        profit = (modify_profits(self, form, df, profit)
+                  if modify_profits else profit)
+
+        profit = profit.astype('float')
+        profit[np.isnan(profit)] = -np.inf
+        maxprofitind = np.argmax(profit, axis=0)
+
+        def twod_get(indexes, arr):
+            return arr[indexes, np.arange(indexes.size)].astype('float')
+
+        outdf = pd.DataFrame({
+            'building_sqft': twod_get(maxprofitind, building_bulks),
+            'building_cost': twod_get(maxprofitind, building_costs),
+            'parking_ratio': parking_sqft_ratio[maxprofitind].flatten(),
+            'stories': twod_get(maxprofitind,
+                                heights) / self.height_per_story,
+            'total_cost': twod_get(maxprofitind, total_development_costs),
+            'building_revenue': twod_get(maxprofitind, building_revenue),
+            'max_profit_far': twod_get(maxprofitind, fars),
+            'max_profit': twod_get(maxprofitind, profit),
+            'parking_config': parking_config,
+            'construction_time': twod_get(maxprofitind, months),
+            'financing_cost': twod_get(maxprofitind, total_financing_costs)
+        }, index=df.index)
+
+        if self.pass_through:
+            outdf[self.pass_through] = df[self.pass_through]
+
+        outdf["residential_sqft"] = (outdf.building_sqft *
+                                     self.building_efficiency *
+                                     resratio)
+        outdf["non_residential_sqft"] = (outdf.building_sqft *
+                                         self.building_efficiency *
+                                         nonresratio)
+
+        if self.only_built:
+            outdf = outdf.query('max_profit > 0').copy()
+        else:
+            outdf = outdf.loc[outdf.max_profit != -np.inf].copy()
+
+        return outdf
+
+    def _min_max_fars(self, df, resratio):
+        """
+        In case max_dua is passed in the DataFrame,
+        now also minimize with max_dua from zoning - since this pro forma is
+        really geared toward per sqft metrics, this is a bit tricky.  dua
+        is converted to floorspace and everything just works (floor space
+        will get covered back to units in developer.pick() but we need to
+        test the profitability of the floorspace allowed by max_dua here.
+
+        Parameters
+        ----------
+        df : DataFrame
+            DataFrame of developable sites/parcels passed to lookup() method
+        resratio : numeric
+            Residential ratio for this form
+
+        Returns
+        -------
+        Series
+        """
+
+        if 'max_dua' in df.columns and resratio > 0:
+            # if max_dua is in the data frame, ave_unit_size must also be there
+            assert 'ave_unit_size' in df.columns
+
+            df['max_far_from_dua'] = (
+                # this is the max_dua times the parcel size in acres, which
+                # gives the number of units that are allowable on the parcel
+                df.max_dua * (df.parcel_size / 43560) *
+
+                # times by the average unit size which gives the square footage
+                # of those units
+                df.ave_unit_size /
+
+                # divided by the building efficiency which is a
+                # factor that indicates that the actual units are not the whole
+                # FAR of the building
+                self.building_efficiency /
+
+                # divided by the resratio which is a  factor that indicates
+                # that the actual units are not the only use of the building
+                resratio /
+
+                # divided by the parcel size again in order to get FAR.
+                # I recognize that parcel_size actually
+                # cancels here as it should, but the calc was hard to get right
+                # and it's just so much more transparent to have it in there
+                # twice
+                df.parcel_size)
+            return df[['max_far_from_heights',
+                       'max_far', 'max_far_from_dua']].min(axis=1)
+        else:
+            return df[
+                ['max_far_from_heights', 'max_far']].min(axis=1)
 
     def get_debug_info(self, form, parking_config):
         """
@@ -594,7 +924,8 @@ class SqFtProFormaReference(object):
                  profit_factor, parcel_coverage, parking_rates, sqft_per_rate,
                  parking_configs, costs, heights_for_costs, parking_sqft_d,
                  parking_cost_d, height_per_story, max_retail_height,
-                 max_industrial_height, **kwargs):
+                 max_industrial_height, construction_sqft_for_months,
+                 construction_months, **kwargs):
 
         self.fars = fars
         self.parcel_sizes = parcel_sizes
@@ -611,6 +942,8 @@ class SqFtProFormaReference(object):
         self.height_per_story = height_per_story
         self.max_retail_height = max_retail_height
         self.max_industrial_height = max_industrial_height
+        self.construction_sqft_for_months = construction_sqft_for_months
+        self.construction_months = construction_months
 
         self.tiled_parcel_sizes = columnize(
             np.repeat(self.parcel_sizes, self.fars.size))
@@ -644,43 +977,71 @@ class SqFtProFormaReference(object):
         self.reference_dict = df_d
 
     def _reference_dataframe(self, name, uses_distrib, parking_config):
+        """
+        This generates a reference DataFrame for each form and parking
+        configuration, which provides development information for various
+        floor-to-area ratios.
 
-        # going to make a dataframe to store values to make
-        # pro forma results transparent
+        Parameters
+        ----------
+        name : str
+            Name of form
+        uses_distrib : ndarray
+            The distribution of uses in this form
+        parking_config : str
+            Name of parking configuration
+
+        Returns
+        -------
+        df : DataFrame
+        """
+
         df = pd.DataFrame(index=self.fars)
+
+        # Array of square footage values for each FAR
+        building_bulk = self._building_bulk(uses_distrib, parking_config)
+
+        # Array of parking stalls required for each FAR
+        parking_stalls = (building_bulk
+                          * np.sum(uses_distrib * self.parking_rates)
+                          / self.sqft_per_rate)
+
+        # Array of stories built at each FAR
+        stories = self._stories(parking_config, building_bulk, parking_stalls)
+
+        # Square feet of parking required for this configuration (constant)
+        park_sqft = self._park_sqft(parking_config, parking_stalls)
+
+        # Array of total parking cost required for each FAR
+        park_cost = (self.parking_cost_d[parking_config]
+                     * parking_stalls
+                     * self.parking_sqft_d[parking_config])
+
+        # Array of building cost per square foot for each FAR
+        building_cost_per_sqft = self._building_cost(uses_distrib, stories)
+
+        total_built_sqft = building_bulk + park_sqft
+
+        # Array of construction time for each FAR
+        construction_months = self._construction_time(uses_distrib,
+                                                      total_built_sqft)
 
         df['far'] = self.fars
         df['pclsz'] = self.tiled_parcel_sizes
-
-        building_bulk = self._building_bulk(uses_distrib, parking_config)
         df['building_sqft'] = building_bulk
-
-        parkingstalls = (building_bulk *
-                         np.sum(uses_distrib * self.parking_rates) /
-                         self.sqft_per_rate)
-        df['spaces'] = parkingstalls
-
-        df['park_sqft'] = self._park_sqft(parking_config, parkingstalls)
-        stories = self._stories(parking_config, building_bulk, parkingstalls)
-
-        df['total_built_sqft'] = df.building_sqft + df.park_sqft
+        df['spaces'] = parking_stalls
+        df['park_sqft'] = park_sqft
+        df['total_built_sqft'] = total_built_sqft
         df['parking_sqft_ratio'] = df.park_sqft / df.total_built_sqft
-
-        stories /= self.parcel_coverage
         df['stories'] = np.ceil(stories)
-
         df['height'] = df.stories * self.height_per_story
-        df['build_cost_sqft'] = self._building_cost(uses_distrib, stories)
+        df['build_cost_sqft'] = building_cost_per_sqft
         df['build_cost'] = df.build_cost_sqft * df.building_sqft
-
-        df['park_cost'] = (self.parking_cost_d[parking_config] *
-                           parkingstalls *
-                           self.parking_sqft_d[parking_config])
-
+        df['park_cost'] = park_cost
         df['cost'] = df.build_cost + df.park_cost
-        df['ave_cost_sqft'] = (
-            (df.cost / df.total_built_sqft) *
-            self.profit_factor)
+        df['ave_cost_sqft'] = ((df.cost / df.total_built_sqft)
+                               * self.profit_factor)
+        df['construction_months'] = construction_months
 
         if name == 'retail':
             df['ave_cost_sqft'][
@@ -752,332 +1113,91 @@ class SqFtProFormaReference(object):
 
         return building_bulk
 
-    def _park_sqft(self, parking_config, parkingstalls):
+    def _park_sqft(self, parking_config, parking_stalls):
+        """
+        Generate building square footage required for a parking configuration
+
+        Parameters
+        ----------
+        parking_config : str
+            Name of parking configuration
+        parking_stalls : numeric
+            Number of parking stalls required
+
+        Returns
+        -------
+        park_sqft : numeric
+        """
 
         if parking_config in ['underground', 'deck']:
-            return parkingstalls * self.parking_sqft_d[parking_config]
+            return parking_stalls * self.parking_sqft_d[parking_config]
         if parking_config == 'surface':
             return 0
 
-    def _stories(self, parking_config, building_bulk, parkingstalls):
+    def _stories(self, parking_config, building_bulk, parking_stalls):
+        """
+        Calculates number of stories built at various FARs, given
+        building bulk, number of parking stalls, and parking configuration
+
+        Parameters
+        ----------
+        parking_config : str
+            Name of parking configuration
+        building_bulk : ndarray
+            Array of total square footage values for each FAR
+        parking_stalls : ndarray
+            Number of parking stalls required for each FAR
+
+        Returns
+        -------
+        stories : ndarray
+
+        """
 
         if parking_config == 'underground':
             stories = building_bulk / self.tiled_parcel_sizes
         if parking_config == 'deck':
-            stories = ((building_bulk + parkingstalls *
-                        self.parking_sqft_d[parking_config]) /
-                       self.tiled_parcel_sizes)
+            stories = ((building_bulk
+                        + parking_stalls
+                        * self.parking_sqft_d[parking_config])
+                       / self.tiled_parcel_sizes)
         if parking_config == 'surface':
-            stories = (building_bulk /
-                       (self.tiled_parcel_sizes - parkingstalls *
-                        self.parking_sqft_d[parking_config]))
+            stories = (building_bulk
+                       / (self.tiled_parcel_sizes
+                          - parking_stalls
+                          * self.parking_sqft_d[parking_config]))
             # not all fars support surface parking
             stories[stories < 0.0] = np.nan
             # I think we can assume that stories over 3
             # do not work with surface parking
             stories[stories > 5.0] = np.nan
 
+        stories /= self.parcel_coverage
+
         return stories
 
-
-class SqFtProFormaLookup(object):
-
-    def __init__(self, reference_dict, res_ratios, uses, forms,
-                 building_efficiency, parcel_coverage, cap_rate,
-                 parking_configs, height_per_story, residential_to_yearly,
-                 only_built, pass_through, simple_zoning, **kwargs):
-
-        self.reference_dict = reference_dict
-        self.res_ratios = res_ratios
-        self.uses = uses
-        self.forms = forms
-        self.building_efficiency = building_efficiency
-        self.parcel_coverage = parcel_coverage
-        self.cap_rate = cap_rate
-        self.parking_configs = parking_configs
-        self.height_per_story = height_per_story
-        self.residential_to_yearly = residential_to_yearly
-        self.only_built = only_built
-        self.pass_through = pass_through
-        self.simple_zoning = simple_zoning
-
-    def lookup(self, form, df):
+    def _construction_time(self, use_mix, building_bulks):
         """
-        This function does the developer model lookups for all the actual input
-        data.
+        Calculate construction time in months for each development site.
 
         Parameters
         ----------
-        form : string
-            One of the forms specified in the configuration file
-        df: dataframe
-            Pass in a single data frame which is indexed by parcel_id and has
-            the following columns
-
-        Input Dataframe Columns
-        rent : dataframe
-            A set of columns, one for each of the uses passed in the
-            configuration. Values are yearly rents for that use. Typical column
-            names would be "residential", "retail", "industrial" and "office"
-        land_cost : series
-            A series representing the CURRENT yearly rent for each parcel.
-            Used to compute acquisition costs for the parcel.
-        parcel_size : series
-            A series representing the parcel size for each parcel.
-        max_far : series
-            A series representing the maximum far allowed by zoning.  Buildings
-            will not be built above these fars.
-        max_height : series
-            A series representing the maxmium height allowed by zoning.
-            Buildings will not be built above these heights.  Will pick between
-            the min of the far and height, will ignore on of them if one is
-            nan, but will not build if both are nan.
-        max_dua : series, optional
-            A series representing the maximum dwelling units per acre allowed
-            by zoning.  If max_dua is passed, the average unit size should be
-            passed below to translate from dua to floor space.
-        ave_unit_size : series, optional
-            This is required if max_dua is passed above, otherwise it is
-            optional. This is the same as the parameter to Developer.pick()
-            (it should be the same series).
+        use_mix : array
+            The mix of uses for this form
+        building_bulks : array
+            Array of square footage for each potential building
 
         Returns
         -------
-        index : Series, int
-            parcel identifiers
-        building_sqft : Series, float
-            The number of square feet for the building to build.  Keep in mind
-            this includes parking and common space.  Will need a helpful
-            function to convert from gross square feet to actual usable square
-            feet in residential units.
-        building_cost : Series, float
-            The cost of constructing the building as given by the
-            ave_cost_per_sqft from the cost model (for this FAR) and the number
-            of square feet.
-        total_cost : Series, float
-            The cost of constructing the building plus the cost of acquisition
-            of the current parcel/building.
-        building_revenue : Series, float
-            The NPV of the revenue for the building to be built, which is the
-            number of square feet times the yearly rent divided by the cap
-            rate (with a few adjustment factors including building efficiency).
-        max_profit_far : Series, float
-            The FAR of the maximum profit building (constrained by the max_far
-            and max_height from the input dataframe).
-        max_profit :
-            The profit for the maximum profit building (constrained by the
-            max_far and max_height from the input dataframe).
+        construction_times : array
         """
 
-        if self.simple_zoning:
-            df = self._simple_zoning(form, df)
-
-        lookup = pd.concat(
-            self._lookup_parking_cfg(form, parking_config, df)
-            for parking_config in self.parking_configs)
-
-        if len(lookup) == 0:
-            return pd.DataFrame()
-
-        result = self._max_profit_parking(lookup)
-
-        if self.residential_to_yearly and "residential" in self.pass_through:
-            result["residential"] /= self.cap_rate
-
-        return result
-
-    @staticmethod
-    def _simple_zoning(form, df):
-        """
-        Replaces max_height and either max_far or max_dua with NaNs
-
-        Parameters
-        ----------
-        form : str
-            Name of form passed to lookup method
-        df : DataFrame
-            DataFrame passed to lookup method
-
-        Returns
-        -------
-        df : DataFrame
-        """
-
-        if form == "residential":
-            # these are new computed in the effective max_dua method
-            df["max_far"] = pd.Series()
-            df["max_height"] = pd.Series()
-        else:
-            # these are new computed in the effective max_far method
-            df["max_dua"] = pd.Series()
-            df["max_height"] = pd.Series()
-
-        return df
-
-    @staticmethod
-    def _max_profit_parking(df):
-        """
-        Return parcels DataFrame with parking configuration that maximizes
-        profit
-
-        Parameters
-        ----------
-        df: DataFrame
-            DataFrame passed to lookup method
-
-        Returns
-        -------
-        result : DataFrame
-        """
-
-        max_profit_ind = df.pivot(
-            columns="parking_config",
-            values="max_profit").idxmax(axis=1).to_frame("parking_config")
-
-        df.set_index(["parking_config"], append=True, inplace=True)
-        max_profit_ind.set_index(["parking_config"], append=True,
-                                 inplace=True)
-
-        # get the max_profit idx
-        result = df.loc[max_profit_ind.index].reset_index(1)
-
-        return result
-
-    def _lookup_parking_cfg(self, form, parking_config, df):
-
-        dev_info = self.reference_dict[(form, parking_config)]
-
-        cost_sqft_col = columnize(dev_info.ave_cost_sqft.values)
-        cost_sqft_index_col = columnize(dev_info.index.values)
-        parking_sqft_ratio = columnize(dev_info.parking_sqft_ratio.values)
-        heights = columnize(dev_info.height.values)
-
-        # don't really mean to edit the df that's passed in
-        df = df.copy()
-
-        # weighted rent for this form
-        df['weighted_rent'] = np.dot(df[self.uses], self.forms[form])
-
-        # min between max_fars and max_heights
-        df['max_far_from_heights'] = (df.max_height /
-                                      self.height_per_story *
-                                      self.parcel_coverage)
-
-        resratio = self.res_ratios[form]
-        nonresratio = 1.0 - resratio
-
-        # now also minimize with max_dua from zoning - since this pro forma is
-        # really geared toward per sqft metrics, this is a bit tricky.  dua
-        # is converted to floorspace and everything just works (floor space
-        # will get covered back to units in developer.pick() but we need to
-        # test the profitability of the floorspace allowed by max_dua here.
-
-        df['min_max_fars'] = self._min_max_fars(df, resratio)
-
-        if self.only_built:
-            df = df.query('min_max_fars > 0 and parcel_size > 0')
-
-        fars = np.repeat(cost_sqft_index_col, len(df.index), axis=1)
-
-        # turn fars into nans which are not allowed by zoning
-        # (so we can fillna with one of the other zoning constraints)
-        fars[fars > df.min_max_fars.values + .01] = np.nan
-
-        # same thing for heights
-        heights = np.repeat(heights, len(df.index), axis=1)
-
-        # turn heights into nans which are not allowed by zoning
-        # (so we can fillna with one of the other zoning constraints)
-        fars[heights > df.max_height.values + .01] = np.nan
-
-        # parcel sizes * possible fars
-        building_bulks = fars * df.parcel_size.values
-
-        # cost to build the new building
-        building_costs = building_bulks * cost_sqft_col
-
-        # add cost to buy the current building
-        total_costs = building_costs + df.land_cost.values
-
-        # rent to make for the new building
-        building_revenue = (building_bulks *
-                            (1 - parking_sqft_ratio) *
-                            self.building_efficiency *
-                            df.weighted_rent.values /
-                            self.cap_rate)
-
-        # profit for each form
-        profit = building_revenue - total_costs
-
-        profit = profit.astype('float')
-        profit[np.isnan(profit)] = -np.inf
-        maxprofitind = np.argmax(profit, axis=0)
-
-        def twod_get(indexes, arr):
-            return arr[indexes, np.arange(indexes.size)].astype('float')
-
-        outdf = pd.DataFrame({
-            'building_sqft': twod_get(maxprofitind, building_bulks),
-            'building_cost': twod_get(maxprofitind, building_costs),
-            'parking_ratio': parking_sqft_ratio[maxprofitind].flatten(),
-            'stories': twod_get(maxprofitind,
-                                heights) / self.height_per_story,
-            'total_cost': twod_get(maxprofitind, total_costs),
-            'building_revenue': twod_get(maxprofitind, building_revenue),
-            'max_profit_far': twod_get(maxprofitind, fars),
-            'max_profit': twod_get(maxprofitind, profit),
-            'parking_config': parking_config
-        }, index=df.index)
-
-        if self.pass_through:
-            outdf[self.pass_through] = df[self.pass_through]
-
-        outdf["residential_sqft"] = (outdf.building_sqft *
-                                     self.building_efficiency *
-                                     resratio)
-        outdf["non_residential_sqft"] = (outdf.building_sqft *
-                                         self.building_efficiency *
-                                         nonresratio)
-
-        if self.only_built:
-            outdf = outdf.query('max_profit > 0').copy()
-        else:
-            outdf = outdf.loc[outdf.max_profit != -np.inf].copy()
-
-        return outdf
-
-    def _min_max_fars(self, df, resratio):
-
-        if 'max_dua' in df.columns and resratio > 0:
-            # if max_dua is in the data frame, ave_unit_size must also be there
-            assert 'ave_unit_size' in df.columns
-
-            df['max_far_from_dua'] = (
-                # this is the max_dua times the parcel size in acres, which
-                # gives the number of units that are allowable on the parcel
-                df.max_dua * (df.parcel_size / 43560) *
-
-                # times by the average unit size which gives the square footage
-                # of those units
-                df.ave_unit_size /
-
-                # divided by the building efficiency which is a
-                # factor that indicates that the actual units are not the whole
-                # FAR of the building
-                self.building_efficiency /
-
-                # divided by the resratio which is a  factor that indicates
-                # that the actual units are not the only use of the building
-                resratio /
-
-                # divided by the parcel size again in order to get FAR.
-                # I recognize that parcel_size actually
-                # cancels here as it should, but the calc was hard to get right
-                # and it's just so much more transparent to have it in there
-                # twice
-                df.parcel_size)
-            return df[['max_far_from_heights',
-                       'max_far', 'max_far_from_dua']].min(axis=1)
-        else:
-            return df[
-                ['max_far_from_heights', 'max_far']].min(axis=1)
+        # Look at square footage and return matching index in list of
+        # construction times
+        month_indices = np.searchsorted(self.construction_sqft_for_months,
+                                        building_bulks)
+        # Get the construction time for each dev site, for all uses
+        months_array_all_uses = self.construction_months[month_indices]
+        # Dot product to get appropriate time for uses being evaluated
+        construction_times = np.dot(months_array_all_uses, use_mix)
+        return construction_times

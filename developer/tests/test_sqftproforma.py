@@ -40,7 +40,7 @@ def simple_dev_inputs_high_cost():
 @pytest.fixture
 def simple_dev_inputs_low_cost():
     sdi = simple_dev_inputs()
-    sdi.land_cost /= 20
+    sdi.land_cost /= 100
     return sdi
 
 
@@ -161,11 +161,15 @@ def test_reasonable_feasibility_results():
     # confirm cost per sqft is between 100 and 400 per sqft
     assert 100 < first.building_cost/first.building_sqft < 400
     # total cost equals building cost plus land cost
-    assert first.total_cost == first.building_cost + df.iloc[0].land_cost
+    assert first.total_cost == (first.building_cost
+                                + df.iloc[0].land_cost
+                                + first.financing_cost)
     # revenue per sqft should be between 200 and 800 per sqft
     assert 200 < first.building_revenue/first.building_sqft < 800
-    assert first.residential_sqft == first.building_sqft * pf.building_efficiency
-    # because of parcel inefficiency, stories should be greater than far, but not too much more
+    assert first.residential_sqft == (first.building_sqft
+                                      * pf.building_efficiency)
+    # because of parcel inefficiency,
+    # stories should be greater than far, but not too much more
     assert first.max_profit_far < first.stories < first.max_profit_far * 3.0
     assert first.non_residential_sqft == 0
     assert first.max_profit > 0

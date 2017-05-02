@@ -153,7 +153,7 @@ class Developer(object):
         logger.debug('serializing Developer model to YAML')
         return utils.convert_to_yaml(self.to_dict, str_or_buffer)
 
-    def pick(self, profit_to_prob_func=None):
+    def pick(self, profit_to_prob_func=None, custom_selection_func=None):
         """
         Choose the buildings from the list that are feasible to build in
         order to match the specified demand.
@@ -166,6 +166,11 @@ class Developer(object):
             a function which takes the feasibility dataframe and returns
             a series of probabilities.  If no function is passed, the behavior
             of this method will not change
+        custom_selection_func: func
+            User passed function that decides how to select buildings for
+            development after probabilities are calculated. Must have
+            parameters (self, df, p) and return a numpy array of buildings to
+            build (i.e. df.index.values)
 
         Returns
         -------
@@ -174,9 +179,11 @@ class Developer(object):
             DataFrame of buildings to add.  These buildings are rows from the
             DataFrame that is returned from feasibility.
         """
+        df = self.feasibility
+        empty_warn = "WARNING THERE ARE NO FEASIBLE BUILDINGS TO CHOOSE FROM"
 
-        if len(self.feasibility) == 0:
-            # no feasible buildings, might as well bail
+        if len(df) == 0 or df.empty:
+            print(empty_warn)
             return
 
         # Get DataFrame of potential buildings from SqFtProForma steps
@@ -184,8 +191,8 @@ class Developer(object):
         df = self._remove_infeasible_buildings(df)
         df = self._calculate_net_units(df)
 
-        if len(df) == 0:
-            print("WARNING THERE ARE NO FEASIBLE BUILDING TO CHOOSE FROM")
+        if len(df) == 0 or df.empty:
+            print(empty_warn)
             return
 
         print("Sum of net units that are profitable: {:,}".format(
@@ -193,7 +200,7 @@ class Developer(object):
 
         # Generate development probabilities and pick buildings to build
         p, df = self._calculate_probabilities(df, profit_to_prob_func)
-        build_idx = self._buildings_to_build(df, p)
+        build_idx = self._select_buildings(df, p, custom_selection_func)
 
         # Drop built buildings from self.feasibility attribute if desired
         self._drop_built_buildings(build_idx)
@@ -295,6 +302,8 @@ class Developer(object):
         -------
         df : DataFrame
         """
+        if len(df) == 0 or df.empty:
+            return df
 
         df = df[df.max_profit_far > 0]
         self.ave_unit_size[
@@ -326,6 +335,8 @@ class Developer(object):
         -------
         df : DataFrame
         """
+        if len(df) == 0 or df.empty:
+            return df
 
         if self.residential:
             df['net_units'] = df.residential_units - df.current_units
@@ -362,7 +373,7 @@ class Developer(object):
             p = df.max_profit_per_size.values / df.max_profit_per_size.sum()
         return p, df
 
-    def _buildings_to_build(self, df, p):
+    def _select_buildings(self, df, p, custom_selection_func):
         """
         Helper method to pick(). Selects buildings to build based on
         development probabilities.
@@ -373,6 +384,11 @@ class Developer(object):
             DataFrame of buildings from _calculate_probabilities method
         p : Series
             Probabilities from _calculate_probabilities method
+        custom_selection_func: func
+            User passed function that decides how to select buildings for
+            development after probabilities are calculated. Must have
+            parameters (self, df, p) and return a numpy array of buildings to
+            build (i.e. df.index.values)
 
         Returns
         -------
@@ -381,7 +397,9 @@ class Developer(object):
 
         """
 
-        if df.net_units.sum() < self.target_units:
+        if custom_selection_func is not None:
+            build_idx = custom_selection_func(self, df, p)
+        elif df.net_units.sum() < self.target_units:
             print("WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO",
                   "MATCH DEMAND")
             build_idx = df.index.values
@@ -442,7 +460,11 @@ class Developer(object):
         """
 
         new_df = df.loc[build_idx]
-        new_df.index.name = "parcel_id"
+
+        drop = True
+        if 'parcel_id' not in df.columns:
+            new_df.index.name = "parcel_id"
+            drop = False
 
         if self.year is not None:
             new_df["year_built"] = self.year
@@ -453,4 +475,4 @@ class Developer(object):
 
         new_df["stories"] = new_df.stories.apply(np.ceil)
 
-        return new_df.reset_index()
+        return new_df.reset_index(drop=drop)

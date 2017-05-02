@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='developer',
-    version='0.2.0',
+    version='0.3.0',
     description='Urbansim developer model',
     author='UrbanSim Inc.',
     author_email='info@urbansim.com',
