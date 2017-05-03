@@ -349,8 +349,9 @@ number.</li>
 </ul>
 <p>To monitor occupancy, we use UrbanSim&#8217;s networks.from_yaml function to
 calculate occupancy for residential and non-residential buildings for each
-node in the Pandana network. Later, we will look up occupancy for each
-parcel using this node table.</p>
+node in the Pandana network. This uses the <code class="docutils literal"><span class="pre">occupancy_vars.yaml</span></code>
+configuration in the San Diego example directory. Later, we will look up
+these calculated occupancy values for each parcel using this node table.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@orca</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="s1">&#39;occupancy_vars_network&#39;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">occupancy_vars_network</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">net</span><span class="p">):</span>
 
@@ -392,7 +393,10 @@ additional arguments to the <code class="docutils literal"><span class="pre">run
                           <span class="n">parcel_custom_callback</span><span class="o">=</span><span class="n">parcel_occupancy_func</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The <code class="docutils literal"><span class="pre">modify_df</span></code> and <code class="docutils literal"><span class="pre">modify_revenues</span></code> callbacks</p>
+<p>The <code class="docutils literal"><span class="pre">parcel_custom_callback</span></code> allows the user to modify the DataFrame of
+parcels or sites that is passed to the pro forma lookup() method. In the
+callback (registered as an Orca injectable) below, occupancies for each
+parcel are looked up from the nodes table.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@orca</span><span class="o">.</span><span class="n">injectable</span><span class="p">(</span><span class="s1">&#39;parcel_occupancy_func&#39;</span><span class="p">,</span> <span class="n">autocall</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">parcel_average_occupancy</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">pf</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">use</span> <span class="ow">in</span> <span class="n">pf</span><span class="o">.</span><span class="n">uses</span><span class="p">:</span>
@@ -403,6 +407,10 @@ additional arguments to the <code class="docutils literal"><span class="pre">run
     <span class="k">return</span> <span class="n">df</span>
 </pre></div>
 </div>
+<p>The <code class="docutils literal"><span class="pre">modify_df</span></code> callback further modifies in the input DataFrame, but this
+time inside the SqFtProForma object, so that it can use all of the object
+attributes, like <code class="docutils literal"><span class="pre">self.forms</span></code>. This callback calculates a weighted occupancy
+for each parcel based on the mix of uses defined by its form.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@orca</span><span class="o">.</span><span class="n">injectable</span><span class="p">(</span><span class="s1">&#39;modify_df_occupancy&#39;</span><span class="p">,</span> <span class="n">autocall</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">modify_df_occupancy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
     <span class="n">occupancies</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;occ_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">use</span><span class="p">)</span> <span class="k">for</span> <span class="n">use</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses</span><span class="p">]</span>
@@ -416,13 +424,62 @@ additional arguments to the <code class="docutils literal"><span class="pre">run
     <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">weighted_occupancy</span> <span class="o">&gt;</span> <span class="o">.</span><span class="mi">50</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">df</span>
-
-
-<span class="nd">@orca</span><span class="o">.</span><span class="n">injectable</span><span class="p">(</span><span class="s1">&#39;modify_revenues_occupancy&#39;</span><span class="p">,</span> <span class="n">autocall</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">modify_revenues</span></code> callback then multiples the revenue array by
+those weighted occupancies for each parcel, effectively taking away revenue
+for vacant space in each parcel. This changes the profitability picture for the
+region substantially.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@orca</span><span class="o">.</span><span class="n">injectable</span><span class="p">(</span><span class="s1">&#39;modify_revenues_occupancy&#39;</span><span class="p">,</span> <span class="n">autocall</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">modify_revenues_occupancy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">revenues</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">revenues</span> <span class="o">*</span> <span class="n">df</span><span class="o">.</span><span class="n">weighted_occupancy</span><span class="o">.</span><span class="n">values</span>
 </pre></div>
 </div>
+<p>Finally, we are also interested in changing the rules to develop buildings.
+This is achieved by passing a callback function to the
+<code class="docutils literal"><span class="pre">custom_selection_func</span></code> parameter in the modified developer step below:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@orca</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="s1">&#39;residential_developer_profit&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">residential_developer_profit</span><span class="p">(</span><span class="n">feasibility</span><span class="p">,</span> <span class="n">households</span><span class="p">,</span> <span class="n">buildings</span><span class="p">,</span>
+                                 <span class="n">parcels</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">summary</span><span class="p">,</span>
+                                 <span class="n">form_to_btype_func</span><span class="p">,</span> <span class="n">add_extra_columns_func</span><span class="p">,</span>
+                                 <span class="n">res_selection</span><span class="p">):</span>
+    <span class="n">new_buildings</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">run_developer</span><span class="p">(</span>
+        <span class="s2">&quot;residential&quot;</span><span class="p">,</span>
+        <span class="n">households</span><span class="p">,</span>
+        <span class="n">buildings</span><span class="p">,</span>
+        <span class="s1">&#39;residential_units&#39;</span><span class="p">,</span>
+        <span class="n">feasibility</span><span class="p">,</span>
+        <span class="n">parcels</span><span class="o">.</span><span class="n">parcel_size</span><span class="p">,</span>
+        <span class="n">parcels</span><span class="o">.</span><span class="n">ave_sqft_per_unit</span><span class="p">,</span>
+        <span class="n">parcels</span><span class="o">.</span><span class="n">total_residential_units</span><span class="p">,</span>
+        <span class="s1">&#39;res_developer.yaml&#39;</span><span class="p">,</span>
+        <span class="n">year</span><span class="o">=</span><span class="n">year</span><span class="p">,</span>
+        <span class="n">form_to_btype_callback</span><span class="o">=</span><span class="n">form_to_btype_func</span><span class="p">,</span>
+        <span class="n">add_more_columns_callback</span><span class="o">=</span><span class="n">add_extra_columns_func</span><span class="p">,</span>
+        <span class="n">custom_selection_func</span><span class="o">=</span><span class="n">res_selection</span><span class="p">)</span>
+
+    <span class="n">summary</span><span class="o">.</span><span class="n">add_parcel_output</span><span class="p">(</span><span class="n">new_buildings</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">res_selection</span></code> callback function below filters the results of the pro
+forma step for parcels that have a profit per square foot of more than $20,
+and selects them for development. That&#8217;s it - there is no reference to target
+units that are typically involved.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@orca</span><span class="o">.</span><span class="n">injectable</span><span class="p">(</span><span class="s1">&#39;res_selection&#39;</span><span class="p">,</span> <span class="n">autocall</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">res_selection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+    <span class="n">min_profit_per_sqft</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;BUILDING ALL BUILDINGS WITH PROFIT &gt; $</span><span class="si">{:.2f}</span><span class="s2"> / sqft&quot;</span>
+          <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">min_profit_per_sqft</span><span class="p">))</span>
+    <span class="n">profitable</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">max_profit_per_size</span> <span class="o">&gt;</span> <span class="n">min_profit_per_sqft</span><span class="p">]</span>
+    <span class="n">build_idx</span> <span class="o">=</span> <span class="n">profitable</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+    <span class="k">return</span> <span class="n">build_idx</span>
+</pre></div>
+</div>
+<p>This example provides a simple set of callback functions to demonstrate the
+various ways users can now intervene in the real estate development process
+in UrbanSim simulations. Of course, the particular implementations shown
+here likely lead to unrealistic outcomes; each region should design callback
+functions that mimic realistic behavior.</p>
 </div>
 </div>
 </div>

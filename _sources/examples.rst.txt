@@ -181,8 +181,9 @@ For this example, we have a few goals:
 
 To monitor occupancy, we use UrbanSim's networks.from_yaml function to
 calculate occupancy for residential and non-residential buildings for each
-node in the Pandana network. Later, we will look up occupancy for each
-parcel using this node table.
+node in the Pandana network. This uses the ``occupancy_vars.yaml``
+configuration in the San Diego example directory. Later, we will look up
+these calculated occupancy values for each parcel using this node table.
 ::
 
    @orca.step('occupancy_vars_network')
@@ -226,7 +227,11 @@ additional arguments to the ``run_feasibility`` helpful function:
                              modify_revenues=modify_revenues_occupancy,
                              parcel_custom_callback=parcel_occupancy_func)
 
-The ``modify_df`` and ``modify_revenues`` callbacks
+
+The ``parcel_custom_callback`` allows the user to modify the DataFrame of
+parcels or sites that is passed to the pro forma lookup() method. In the
+callback (registered as an Orca injectable) below, occupancies for each
+parcel are looked up from the nodes table.
 
 ::
 
@@ -239,6 +244,11 @@ The ``modify_df`` and ``modify_revenues`` callbacks
                                       orca.get_table('parcels').node_id)
        return df
 
+
+The ``modify_df`` callback further modifies in the input DataFrame, but this
+time inside the SqFtProForma object, so that it can use all of the object
+attributes, like ``self.forms``. This callback calculates a weighted occupancy
+for each parcel based on the mix of uses defined by its form.
 ::
 
    @orca.injectable('modify_df_occupancy', autocall=False)
@@ -255,11 +265,68 @@ The ``modify_df`` and ``modify_revenues`` callbacks
 
        return df
 
+The ``modify_revenues`` callback then multiples the revenue array by
+those weighted occupancies for each parcel, effectively taking away revenue
+for vacant space in each parcel. This changes the profitability picture for the
+region substantially.
+::
 
    @orca.injectable('modify_revenues_occupancy', autocall=False)
    def modify_revenues_occupancy(self, form, df, revenues):
        return revenues * df.weighted_occupancy.values
 
+
+Finally, we are also interested in changing the rules to develop buildings.
+This is achieved by passing a callback function to the
+``custom_selection_func`` parameter in the modified developer step below:
+
+::
+
+   @orca.step('residential_developer_profit')
+   def residential_developer_profit(feasibility, households, buildings,
+                                    parcels, year, summary,
+                                    form_to_btype_func, add_extra_columns_func,
+                                    res_selection):
+       new_buildings = utils.run_developer(
+           "residential",
+           households,
+           buildings,
+           'residential_units',
+           feasibility,
+           parcels.parcel_size,
+           parcels.ave_sqft_per_unit,
+           parcels.total_residential_units,
+           'res_developer.yaml',
+           year=year,
+           form_to_btype_callback=form_to_btype_func,
+           add_more_columns_callback=add_extra_columns_func,
+           custom_selection_func=res_selection)
+
+       summary.add_parcel_output(new_buildings)
+
+
+The ``res_selection`` callback function below filters the results of the pro
+forma step for parcels that have a profit per square foot of more than $20,
+and selects them for development. That's it - there is no reference to target
+units that are typically involved.
+
+::
+
+   @orca.injectable('res_selection', autocall=False)
+   def res_selection(self, df, p):
+       min_profit_per_sqft = 20
+       print("BUILDING ALL BUILDINGS WITH PROFIT > ${:.2f} / sqft"
+             .format(min_profit_per_sqft))
+       profitable = df.loc[df.max_profit_per_size > min_profit_per_sqft]
+       build_idx = profitable.index.values
+       return build_idx
+
+
+This example provides a simple set of callback functions to demonstrate the
+various ways users can now intervene in the real estate development process
+in UrbanSim simulations. Of course, the particular implementations shown
+here likely lead to unrealistic outcomes; each region should design callback
+functions that mimic realistic behavior.
 
 .. _introduction: http://udst.github.io/urbansim/gettingstarted.html#a-gentle-introduction-to-urbansim
 .. _examples: http://udst.github.io/urbansim/examples.html
