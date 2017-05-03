@@ -1,14 +1,172 @@
 Examples
 ========
 
-Basic Example with Existing Workflow
-------------------------------------
-Example here
+These examples presuppose familiarity with UrbanSim and its typical workflows.
+See the basic introduction_ and examples_ from UrbanSim's documentation.
 
-Using Occupancy Rates with Callback Functions
----------------------------------------------
-Example here
+Starter Repository: urbansim_parcels
+------------------------------------
+The `urbansim_parcels`_ repository was built as a new "starter model" that
+provides boilerplate code to take advantage of new features in this developer
+model. See installation details in the `readme <urbansim_parcels_>`_.
+
+Repository Structure
+~~~~~~~~~~~~~~~~~~~~
+The ``urbansim_parcels`` repository is structured in three directories:
+
+- ``/urbansim_parcels`` is the actual Python package that contains the core
+  modules with code that interfaces with UrbanSim and the developer model.
+  Those that have used ``urbansim_defaults`` or other starter models will
+  find the structure very similar:
+
+    - models.py
+    - variables.py
+    - utils.py
+    - datasources.py
+    - pipeline_utils.py
+
+- ``/sd_example`` and ``/sf_example`` are directories containing an example
+  regional model that uses much of the functionality provided in the
+  "base" modules (e.g. ``urbansim_parcels/models.py``) but also add their own
+  custom models or utility functions (e.g. ``sd_example/custom_models.py``)
+  that overwrite certain Orca registrations from the base model.
+  These examples also come with their own configurations and data.
+  More information on the example models below.
+
+
+Example Models
+~~~~~~~~~~~~~~
+- **San Diego**: This is a relatively fully-featured model built off of
+  San Diego's openly shared data and model code from the sandiego_urbansim_
+  repository in UDST. This model includes Pandana network accessibility
+  variables. The data that comes with the repository is a small subset of the
+  full data; download instructions for the full dataset are provided in the
+  `readme <urbansim_parcels_>`_. Note: The data is not guaranteed to be up to
+  date, and model code has been modified from the original repo.
+- **San Francisco**: This is based off of the sanfran_urbansim_ repository that
+  has long been used as a simple integration test for the UrbanSim library.
+  Its features have been modified to work with this new developer model.
+
+Simulation Examples
+-------------------
+
+Base Simulation
+~~~~~~~~~~~~~~~
+
+Running ``simulate.py`` in either example directory runs the model for each
+region with minimal changes from the previous starter models. The major
+difference is that model steps have been modified to work with the new
+developer model. For example, both examples pull configurations for the
+SqFtProForma model from ``configs/proforma.yaml``, taking advantage of the
+new I/O features.
 
 Adding a Development Pipeline
------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The addition of a development pipeline and related helper functions is one of
+two major improvements in this starter model. The ``simulate_pipeline.py``
+script in either example directory runs a simulation in which, after the
+price models and location choice models are run:
+
+- Parcels larger than a certain size are split into smaller chunks and
+  go through their own pro forma and development models. Qualifying
+  development sites are added to the pipeline.
+- All other parcels are assessed for profitability in the pro forma model.
+- These parcels are added to the pipeline according to the developer model.
+- Projects in the pipeline are "built" by adding the correct sites to the
+  buildings table.
+
+This workflow introduces some new data structures:
+
+- **Pipeline**: DataFrame indexed by ``project_id`` that contains information
+  about how many sites are contained in a project, and when the project is
+  due to be completed.
+- **Sites**: The individual piece of land that a building may be built on. This
+  is the unit that the pro forma and developer models operate on, and sites
+  are linked to a ``project_id`` and a ``parcel_id``. A site may be the
+  same as a parcel, could contain multiple parcels, and multiple sites can be
+  within a parcel. These are contained in the dev_sites table in these
+  examples.
+
+.. note::
+   The current versions of the pipeline and sites tables support nested sites
+   within parcels, but *not* sites that contain multiple parcels. This is an
+   important feature that we plan to add soon.
+
+The ``feasibility_with_pipeline`` step in the simulation script is the
+first place to examine the new functionality. This step calls the function
+of the same name in ``urbansim_parcels/models.py``, and passes
+the ``pipeline=True`` argument to the helper function:
+::
+
+   @orca.step('feasibility_with_pipeline')
+   def feasibility_with_pipeline(parcels,
+                                 parcel_sales_price_sqft_func,
+                                 parcel_is_allowed_func):
+       utils.run_feasibility(parcels,
+                             parcel_sales_price_sqft_func,
+                             parcel_is_allowed_func,
+                             pipeline=True,
+                             cfg='proforma.yaml')
+
+
+The ``pipeline`` argument ensures that feasibility is only assessed
+(via the pro forma model) for parcels than do not contain any sites
+associated with projects in the pipeline. The results of this are passed to
+the next step, ``residential_developer_pipeline``, also with the
+``pipeline=True`` argument:
+::
+
+   @orca.step('residential_developer_pipeline')
+   def residential_developer_pipeline(feasibility, households, buildings, parcels,
+                                      year, summary, form_to_btype_func,
+                                      add_extra_columns_func):
+       new_buildings = utils.run_developer(
+           "residential",
+           households,
+           buildings,
+           'residential_units',
+           feasibility,
+           parcels.parcel_size,
+           parcels.ave_sqft_per_unit,
+           parcels.total_residential_units,
+           'res_developer.yaml',
+           year=year,
+           form_to_btype_callback=form_to_btype_func,
+           add_more_columns_callback=add_extra_columns_func,
+           pipeline=True)
+
+       summary.add_parcel_output(new_buildings)
+
+
+In this case, the ``pipeline`` argument ensures that when potential buildings
+are selected for development, they are not immediately appended to the
+buildings table, but added to the pipeline. The ``pipeline_utils`` module
+contains helper functions that facilitate this process.
+
+Additional details:
+
+- Both of the example models are set up with Orca tables named ``pipeline`` and
+  ``dev_sites``, which can be examined over the course of a simulation to see
+  how sites are being added.
+- The ``year_built`` column is currently added to sites based on the
+  construction time used in the pro forma step. This is currently set up in
+  ``utils.add_buildings()``.
+- The ``add_more_columns_callback`` in ``utils.add_buildings()`` must be
+  configured to add columns that match the columns of the original buildings
+  table. See the "add_extra_columns" function in San Diego's custom model
+  file for an example.
+- In the San Diego example, the ``scheduled_development_events`` step is
+  disabled, and instead, the scheduled development events are added to the
+  pipeline upon loading data sources
+  (see ``sd_example/custom_datasources.py``).
+
+
+Using Occupancy Rates with Callback Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Example here
+
+.. _introduction: http://udst.github.io/urbansim/gettingstarted.html#a-gentle-introduction-to-urbansim
+.. _examples: http://udst.github.io/urbansim/examples.html
+.. _urbansim_parcels: https://github.com/urbansim/urbansim_parcels
+.. _sandiego_urbansim: https://github.com/udst/sandiego_urbansim
+.. _sanfran_urbansim: https://github.com/udst/sanfran_urbansim

@@ -31,4 +31,4 @@ script:
 - pycodestyle developer
 - py.test
 - cd ../urbansim_parcels/sf_example && python simulate.py
-- cd ../sd_example && python Simulation.py
+- cd ../sd_example && python simulate.py

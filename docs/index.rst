@@ -7,8 +7,11 @@ UrbanSim Developer Model
 ========================
 
 This package is a new-and-improved version of the developer model
-included in `UrbanSim <http://urbansim.org>`_ and is currently under
-active development
+included in `UrbanSim <http://urbansim.org>`_.
+
+.. note::
+   This package is in alpha and is actively under development. Please feel
+   free to report bugs or suggest improvements.
 
 Contents
 --------
