@@ -95,7 +95,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#starter-repository-urbansim-parcels">Starter Repository: urbansim_parcels</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#repository-structure">Repository Structure</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#example-models">Example Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-regions">Example Regions</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#simulation-examples">Simulation Examples</a><ul>
@@ -206,8 +206,8 @@ More information on the example models below.</p>
 </li>
 </ul>
 </div>
-<div class="section" id="example-models">
-<h3>Example Models<a class="headerlink" href="#example-models" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="example-regions">
+<h3>Example Regions<a class="headerlink" href="#example-regions" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><strong>San Diego</strong>: This is a relatively fully-featured model built off of
 San Diego&#8217;s openly shared data and model code from the <a class="reference external" href="https://github.com/udst/sandiego_urbansim">sandiego_urbansim</a>
@@ -332,7 +332,97 @@ pipeline upon loading data sources
 </div>
 <div class="section" id="using-occupancy-rates-with-callback-functions">
 <h3>Using Occupancy Rates with Callback Functions<a class="headerlink" href="#using-occupancy-rates-with-callback-functions" title="Permalink to this headline">¶</a></h3>
-<p>Example here</p>
+<p>The other major improvement in this model is the ability to use callback
+functions in several places to modify the behavior of the pro forma and
+developer steps. The <code class="docutils literal"><span class="pre">simulate_occupancy.py</span></code> script for both of the
+example regions provides one application of these features. Note that this
+script does not use any of the pipeline features described above. We&#8217;ll focus
+on the San Diego implementation for this example.</p>
+<p>For this example, we have a few goals:</p>
+<ul class="simple">
+<li>Monitor the occupancy of buildings in the region (by use and subgeography)</li>
+<li>Use the occupancy data to inform pro forma analysis. Buildings that are
+expected to have low occupancy should be expected to be less profitable.</li>
+<li>Change the developer model&#8217;s rules to develop all buildings that meet a
+certain profitability threshold, rather than meeting a <code class="docutils literal"><span class="pre">target_unit</span></code>
+number.</li>
+</ul>
+<p>To monitor occupancy, we use UrbanSim&#8217;s networks.from_yaml function to
+calculate occupancy for residential and non-residential buildings for each
+node in the Pandana network. Later, we will look up occupancy for each
+parcel using this node table.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@orca</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="s1">&#39;occupancy_vars_network&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">occupancy_vars_network</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">net</span><span class="p">):</span>
+
+    <span class="n">oldest_year</span> <span class="o">=</span> <span class="n">year</span> <span class="o">-</span> <span class="mi">20</span>
+    <span class="n">building_occupancy</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">building_occupancy</span><span class="p">(</span><span class="n">oldest_year</span><span class="p">)</span>
+    <span class="n">orca</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span><span class="s1">&#39;building_occupancy&#39;</span><span class="p">,</span> <span class="n">building_occupancy</span><span class="p">)</span>
+
+    <span class="n">res_mean</span> <span class="o">=</span> <span class="n">building_occupancy</span><span class="o">.</span><span class="n">occupancy_res</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Average residential occupancy in </span><span class="si">{}</span><span class="s1"> for buildings built&#39;</span>
+          <span class="s1">&#39; since </span><span class="si">{}</span><span class="s1">: </span><span class="si">{:.2f}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">oldest_year</span><span class="p">,</span> <span class="n">res_mean</span> <span class="o">*</span> <span class="mi">100</span><span class="p">))</span>
+
+    <span class="n">nonres_mean</span> <span class="o">=</span> <span class="n">building_occupancy</span><span class="o">.</span><span class="n">occupancy_nonres</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Average non-residential occupancy in </span><span class="si">{}</span><span class="s1"> for buildings built&#39;</span>
+          <span class="s1">&#39; since </span><span class="si">{}</span><span class="s1">: </span><span class="si">{:.2f}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">oldest_year</span><span class="p">,</span> <span class="n">nonres_mean</span> <span class="o">*</span> <span class="mi">100</span><span class="p">))</span>
+
+    <span class="n">nodes2</span> <span class="o">=</span> <span class="n">networks</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="s2">&quot;occupancy_vars.yaml&quot;</span><span class="p">)</span>
+    <span class="n">nodes2</span> <span class="o">=</span> <span class="n">nodes2</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">nodes2</span><span class="o">.</span><span class="n">describe</span><span class="p">())</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="n">orca</span><span class="o">.</span><span class="n">get_table</span><span class="p">(</span><span class="s1">&#39;nodes&#39;</span><span class="p">)</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="n">nodes</span><span class="o">.</span><span class="n">to_frame</span><span class="p">()</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nodes2</span><span class="p">)</span>
+    <span class="n">orca</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span><span class="s2">&quot;nodes&quot;</span><span class="p">,</span> <span class="n">nodes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To incorporate occupancy data in the pro forma step, we can pass three
+additional arguments to the <code class="docutils literal"><span class="pre">run_feasibility</span></code> helpful function:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@orca</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="s1">&#39;feasibility_with_occupancy&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">feasibility_with_occupancy</span><span class="p">(</span><span class="n">parcels</span><span class="p">,</span>
+                               <span class="n">parcel_sales_price_sqft_func</span><span class="p">,</span>
+                               <span class="n">parcel_is_allowed_func</span><span class="p">,</span>
+                               <span class="n">parcel_occupancy_func</span><span class="p">,</span>
+                               <span class="n">modify_df_occupancy</span><span class="p">,</span>
+                               <span class="n">modify_revenues_occupancy</span><span class="p">):</span>
+    <span class="n">utils</span><span class="o">.</span><span class="n">run_feasibility</span><span class="p">(</span><span class="n">parcels</span><span class="p">,</span>
+                          <span class="n">parcel_sales_price_sqft_func</span><span class="p">,</span>
+                          <span class="n">parcel_is_allowed_func</span><span class="p">,</span>
+                          <span class="n">cfg</span><span class="o">=</span><span class="s1">&#39;proforma.yaml&#39;</span><span class="p">,</span>
+                          <span class="n">modify_df</span><span class="o">=</span><span class="n">modify_df_occupancy</span><span class="p">,</span>
+                          <span class="n">modify_revenues</span><span class="o">=</span><span class="n">modify_revenues_occupancy</span><span class="p">,</span>
+                          <span class="n">parcel_custom_callback</span><span class="o">=</span><span class="n">parcel_occupancy_func</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">modify_df</span></code> and <code class="docutils literal"><span class="pre">modify_revenues</span></code> callbacks</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@orca</span><span class="o">.</span><span class="n">injectable</span><span class="p">(</span><span class="s1">&#39;parcel_occupancy_func&#39;</span><span class="p">,</span> <span class="n">autocall</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">parcel_average_occupancy</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">pf</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">use</span> <span class="ow">in</span> <span class="n">pf</span><span class="o">.</span><span class="n">uses</span><span class="p">:</span>
+        <span class="n">occ_var</span> <span class="o">=</span> <span class="s1">&#39;occ_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">use</span><span class="p">)</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="n">orca</span><span class="o">.</span><span class="n">get_table</span><span class="p">(</span><span class="s1">&#39;nodes&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">to_frame</span><span class="p">([</span><span class="n">occ_var</span><span class="p">])</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">occ_var</span><span class="p">]</span> <span class="o">=</span> <span class="n">misc</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">nodes</span><span class="p">[</span><span class="n">occ_var</span><span class="p">],</span>
+                                   <span class="n">orca</span><span class="o">.</span><span class="n">get_table</span><span class="p">(</span><span class="s1">&#39;parcels&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">node_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span>
+</pre></div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@orca</span><span class="o">.</span><span class="n">injectable</span><span class="p">(</span><span class="s1">&#39;modify_df_occupancy&#39;</span><span class="p">,</span> <span class="n">autocall</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">modify_df_occupancy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+    <span class="n">occupancies</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;occ_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">use</span><span class="p">)</span> <span class="k">for</span> <span class="n">use</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">occupancies</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">())):</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;weighted_occupancy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span>
+            <span class="n">df</span><span class="p">[</span><span class="n">occupancies</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forms</span><span class="p">[</span><span class="n">form</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;weighted_occupancy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">weighted_occupancy</span> <span class="o">&gt;</span> <span class="o">.</span><span class="mi">50</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">df</span>
+
+
+<span class="nd">@orca</span><span class="o">.</span><span class="n">injectable</span><span class="p">(</span><span class="s1">&#39;modify_revenues_occupancy&#39;</span><span class="p">,</span> <span class="n">autocall</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">modify_revenues_occupancy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">revenues</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">revenues</span> <span class="o">*</span> <span class="n">df</span><span class="o">.</span><span class="n">weighted_occupancy</span><span class="o">.</span><span class="n">values</span>
+</pre></div>
+</div>
 </div>
 </div>
 </div>

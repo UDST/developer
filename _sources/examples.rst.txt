@@ -34,8 +34,8 @@ The ``urbansim_parcels`` repository is structured in three directories:
   More information on the example models below.
 
 
-Example Models
-~~~~~~~~~~~~~~
+Example Regions
+~~~~~~~~~~~~~~~
 - **San Diego**: This is a relatively fully-featured model built off of
   San Diego's openly shared data and model code from the sandiego_urbansim_
   repository in UDST. This model includes Pandana network accessibility
@@ -163,7 +163,103 @@ Additional details:
 
 Using Occupancy Rates with Callback Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Example here
+The other major improvement in this model is the ability to use callback
+functions in several places to modify the behavior of the pro forma and
+developer steps. The ``simulate_occupancy.py`` script for both of the
+example regions provides one application of these features. Note that this
+script does not use any of the pipeline features described above. We'll focus
+on the San Diego implementation for this example.
+
+For this example, we have a few goals:
+
+- Monitor the occupancy of buildings in the region (by use and subgeography)
+- Use the occupancy data to inform pro forma analysis. Buildings that are
+  expected to have low occupancy should be expected to be less profitable.
+- Change the developer model's rules to develop all buildings that meet a
+  certain profitability threshold, rather than meeting a ``target_unit``
+  number.
+
+To monitor occupancy, we use UrbanSim's networks.from_yaml function to
+calculate occupancy for residential and non-residential buildings for each
+node in the Pandana network. Later, we will look up occupancy for each
+parcel using this node table.
+::
+
+   @orca.step('occupancy_vars_network')
+   def occupancy_vars_network(year, net):
+
+       oldest_year = year - 20
+       building_occupancy = utils.building_occupancy(oldest_year)
+       orca.add_table('building_occupancy', building_occupancy)
+
+       res_mean = building_occupancy.occupancy_res.mean()
+       print('Average residential occupancy in {} for buildings built'
+             ' since {}: {:.2f}%'.format(year, oldest_year, res_mean * 100))
+
+       nonres_mean = building_occupancy.occupancy_nonres.mean()
+       print('Average non-residential occupancy in {} for buildings built'
+             ' since {}: {:.2f}%'.format(year, oldest_year, nonres_mean * 100))
+
+       nodes2 = networks.from_yaml(net, "occupancy_vars.yaml")
+       nodes2 = nodes2.fillna(0)
+       print(nodes2.describe())
+       nodes = orca.get_table('nodes')
+       nodes = nodes.to_frame().join(nodes2)
+       orca.add_table("nodes", nodes)
+
+To incorporate occupancy data in the pro forma step, we can pass three
+additional arguments to the ``run_feasibility`` helpful function:
+::
+
+   @orca.step('feasibility_with_occupancy')
+   def feasibility_with_occupancy(parcels,
+                                  parcel_sales_price_sqft_func,
+                                  parcel_is_allowed_func,
+                                  parcel_occupancy_func,
+                                  modify_df_occupancy,
+                                  modify_revenues_occupancy):
+       utils.run_feasibility(parcels,
+                             parcel_sales_price_sqft_func,
+                             parcel_is_allowed_func,
+                             cfg='proforma.yaml',
+                             modify_df=modify_df_occupancy,
+                             modify_revenues=modify_revenues_occupancy,
+                             parcel_custom_callback=parcel_occupancy_func)
+
+The ``modify_df`` and ``modify_revenues`` callbacks
+
+::
+
+   @orca.injectable('parcel_occupancy_func', autocall=False)
+   def parcel_average_occupancy(df, pf):
+       for use in pf.uses:
+           occ_var = 'occ_{}'.format(use)
+           nodes = orca.get_table('nodes').to_frame([occ_var])
+           df[occ_var] = misc.reindex(nodes[occ_var],
+                                      orca.get_table('parcels').node_id)
+       return df
+
+::
+
+   @orca.injectable('modify_df_occupancy', autocall=False)
+   def modify_df_occupancy(self, form, df):
+       occupancies = ['occ_{}'.format(use) for use in self.uses]
+       if set(occupancies).issubset(set(df.columns.tolist())):
+           df['weighted_occupancy'] = np.dot(
+               df[occupancies],
+               self.forms[form])
+       else:
+           df['weighted_occupancy'] = 1.0
+
+       df = df.loc[df.weighted_occupancy > .50]
+
+       return df
+
+
+   @orca.injectable('modify_revenues_occupancy', autocall=False)
+   def modify_revenues_occupancy(self, form, df, revenues):
+       return revenues * df.weighted_occupancy.values
+
 
 .. _introduction: http://udst.github.io/urbansim/gettingstarted.html#a-gentle-introduction-to-urbansim
 .. _examples: http://udst.github.io/urbansim/examples.html
