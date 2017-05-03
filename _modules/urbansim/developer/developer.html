@@ -1,0 +1,494 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>urbansim.developer.developer &mdash; developer 0.3.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="developer 0.3.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> developer
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer.html">Real Estate Development Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">developer</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>urbansim.developer.developer</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for urbansim.developer.developer</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="Developer"><a class="viewcode-back" href="../../../developer/index.html#urbansim.developer.developer.Developer">[docs]</a><span class="k">class</span> <span class="nc">Developer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Pass the dataframe that is returned by feasibility here</span>
+
+<span class="sd">    Can also be a dictionary where keys are building forms and values are</span>
+<span class="sd">    the individual data frames returned by the proforma lookup routine.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feasibility</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feasibility</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">feasibility</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">feasibility</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">keys</span><span class="o">=</span><span class="n">feasibility</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feasibility</span> <span class="o">=</span> <span class="n">feasibility</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_max_form</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">colname</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Assumes dataframe with hierarchical columns with first index equal to the</span>
+<span class="sd">        use and second index equal to the attribute.</span>
+
+<span class="sd">        e.g. f.columns equal to::</span>
+
+<span class="sd">            mixedoffice   building_cost</span>
+<span class="sd">                          building_revenue</span>
+<span class="sd">                          building_size</span>
+<span class="sd">                          max_profit</span>
+<span class="sd">                          max_profit_far</span>
+<span class="sd">                          total_cost</span>
+<span class="sd">            industrial    building_cost</span>
+<span class="sd">                          building_revenue</span>
+<span class="sd">                          building_size</span>
+<span class="sd">                          max_profit</span>
+<span class="sd">                          max_profit_far</span>
+<span class="sd">                          total_cost</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)[[</span><span class="n">colname</span><span class="p">]]</span><span class="o">.</span><span class="n">stack</span><span class="p">()</span><span class="o">.</span><span class="n">unstack</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">idxmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Developer.keep_form_with_max_profit"><a class="viewcode-back" href="../../../developer/index.html#urbansim.developer.developer.Developer.keep_form_with_max_profit">[docs]</a>    <span class="k">def</span> <span class="nf">keep_form_with_max_profit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">forms</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This converts the dataframe, which shows all profitable forms,</span>
+<span class="sd">        to the form with the greatest profit, so that more profitable</span>
+<span class="sd">        forms outcompete less profitable forms.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        forms: list of strings</span>
+<span class="sd">            List of forms which compete which other.  Can leave some out.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Nothing.  Goes from a multi-index to a single index with only the</span>
+<span class="sd">        most profitable form.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feasibility</span>
+
+        <span class="k">if</span> <span class="n">forms</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">forms</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_form</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s2">&quot;max_profit&quot;</span><span class="p">)</span>
+            <span class="n">indexes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">mu</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">indexes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">indexes</span><span class="p">]</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;parcel_id&quot;</span><span class="p">,</span> <span class="s2">&quot;form&quot;</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Developer.compute_units_to_build"><a class="viewcode-back" href="../../../developer/index.html#urbansim.developer.developer.Developer.compute_units_to_build">[docs]</a>    <span class="k">def</span> <span class="nf">compute_units_to_build</span><span class="p">(</span><span class="n">num_agents</span><span class="p">,</span> <span class="n">num_units</span><span class="p">,</span> <span class="n">target_vacancy</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute number of units to build to match target vacancy.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        num_agents : int</span>
+<span class="sd">            number of agents that need units in the region</span>
+<span class="sd">        num_units : int</span>
+<span class="sd">            number of units in buildings</span>
+<span class="sd">        target_vacancy : float (0-1.0)</span>
+<span class="sd">            target vacancy rate</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        number_of_units : int</span>
+<span class="sd">            the number of units that need to be built</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of agents: </span><span class="si">{:,}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_agents</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of agent spaces: </span><span class="si">{:,}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">num_units</span><span class="p">)))</span>
+        <span class="k">assert</span> <span class="n">target_vacancy</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
+        <span class="n">target_units</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">num_agents</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">target_vacancy</span><span class="p">)</span> <span class="o">-</span> <span class="n">num_units</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Current vacancy = </span><span class="si">{:.2f}</span><span class="s2">&quot;</span>
+              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">num_agents</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">num_units</span><span class="p">)))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Target vacancy = </span><span class="si">{:.2f}</span><span class="s2">, target of new units = </span><span class="si">{:,}</span><span class="s2">&quot;</span>
+              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">target_vacancy</span><span class="p">,</span> <span class="n">target_units</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">target_units</span></div>
+
+<div class="viewcode-block" id="Developer.pick"><a class="viewcode-back" href="../../../developer/index.html#urbansim.developer.developer.Developer.pick">[docs]</a>    <span class="k">def</span> <span class="nf">pick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">target_units</span><span class="p">,</span> <span class="n">parcel_size</span><span class="p">,</span> <span class="n">ave_unit_size</span><span class="p">,</span>
+             <span class="n">current_units</span><span class="p">,</span> <span class="n">max_parcel_size</span><span class="o">=</span><span class="mi">200000</span><span class="p">,</span> <span class="n">min_unit_size</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span>
+             <span class="n">drop_after_build</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">residential</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">bldg_sqft_per_job</span><span class="o">=</span><span class="mf">400.0</span><span class="p">,</span>
+             <span class="n">profit_to_prob_func</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Choose the buildings from the list that are feasible to build in</span>
+<span class="sd">        order to match the specified demand.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        form : string or list</span>
+<span class="sd">            One or more of the building forms from the pro forma specification -</span>
+<span class="sd">            e.g. &quot;residential&quot; or &quot;mixedresidential&quot; - these are configuration</span>
+<span class="sd">            parameters passed previously to the pro forma.  If more than one form</span>
+<span class="sd">            is passed the forms compete with each other (based on profitability)</span>
+<span class="sd">            for which one gets built in order to meet demand.</span>
+<span class="sd">        target_units : int</span>
+<span class="sd">            The number of units to build.  For non-residential buildings this</span>
+<span class="sd">            should be passed as the number of job spaces that need to be created.</span>
+<span class="sd">        parcel_size : series</span>
+<span class="sd">            The size of the parcels.  This was passed to feasibility as well,</span>
+<span class="sd">            but should be passed here as well.  Index should be parcel_ids.</span>
+<span class="sd">        ave_unit_size : series</span>
+<span class="sd">            The average residential unit size around each parcel - this is</span>
+<span class="sd">            indexed by parcel, but is usually a disaggregated version of a</span>
+<span class="sd">            zonal or accessibility aggregation.</span>
+<span class="sd">        bldg_sqft_per_job : float (default 400.0)</span>
+<span class="sd">            The average square feet per job for this building form.</span>
+<span class="sd">        min_unit_size : float</span>
+<span class="sd">            Values less than this number in ave_unit_size will be set to this</span>
+<span class="sd">            number.  Deals with cases where units are currently not built.</span>
+<span class="sd">        current_units : series</span>
+<span class="sd">            The current number of units on the parcel.  Is used to compute the</span>
+<span class="sd">            net number of units produced by the developer model.  Many times</span>
+<span class="sd">            the developer model is redeveloping units (demolishing them) and</span>
+<span class="sd">            is trying to meet a total number of net units produced.</span>
+<span class="sd">        max_parcel_size : float</span>
+<span class="sd">            Parcels larger than this size will not be considered for</span>
+<span class="sd">            development - usually large parcels should be specified manually</span>
+<span class="sd">            in a development projects table.</span>
+<span class="sd">        drop_after_build : bool</span>
+<span class="sd">            Whether or not to drop parcels from consideration after they</span>
+<span class="sd">            have been chosen for development.  Usually this is true so as</span>
+<span class="sd">            to not develop the same parcel twice.</span>
+<span class="sd">        residential: bool</span>
+<span class="sd">            If creating non-residential buildings set this to false and</span>
+<span class="sd">            developer will fill in job_spaces rather than residential_units</span>
+<span class="sd">        profit_to_prob_func: function</span>
+<span class="sd">            As there are so many ways to turn the development feasibility</span>
+<span class="sd">            into a probability to select it for building, the user may pass</span>
+<span class="sd">            a function which takes the feasibility dataframe and returns</span>
+<span class="sd">            a series of probabilities.  If no function is passed, the behavior</span>
+<span class="sd">            of this method will not change</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None if thar are no feasible buildings</span>
+<span class="sd">        new_buildings : dataframe</span>
+<span class="sd">            DataFrame of buildings to add.  These buildings are rows from the</span>
+<span class="sd">            DataFrame that is returned from feasibility.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feasibility</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># no feasible buildings, might as well bail</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">form</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feasibility</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">form</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_form_with_max_profit</span><span class="p">(</span><span class="n">form</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feasibility</span><span class="p">[</span><span class="n">form</span><span class="p">]</span>
+
+        <span class="c1"># feasible buildings only for this building type</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">max_profit_far</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">ave_unit_size</span><span class="p">[</span><span class="n">ave_unit_size</span> <span class="o">&lt;</span> <span class="n">min_unit_size</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_unit_size</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;ave_unit_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ave_unit_size</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;parcel_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parcel_size</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;current_units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_units</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">parcel_size</span> <span class="o">&lt;</span> <span class="n">max_parcel_size</span><span class="p">]</span>
+
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;residential_units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">residential_sqft</span> <span class="o">/</span> <span class="n">df</span><span class="o">.</span><span class="n">ave_unit_size</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">()</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;job_spaces&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">non_residential_sqft</span> <span class="o">/</span> <span class="n">bldg_sqft_per_job</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">residential</span><span class="p">:</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;net_units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">residential_units</span> <span class="o">-</span> <span class="n">df</span><span class="o">.</span><span class="n">current_units</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;net_units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">job_spaces</span> <span class="o">-</span> <span class="n">df</span><span class="o">.</span><span class="n">current_units</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">net_units</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING THERE ARE NO FEASIBLE BUILDING TO CHOOSE FROM&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># print &quot;Describe of net units\n&quot;, df.net_units.describe()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sum of net units that are profitable: </span><span class="si">{:,}</span><span class="s2">&quot;</span>
+              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">net_units</span><span class="o">.</span><span class="n">sum</span><span class="p">())))</span>
+
+        <span class="k">if</span> <span class="n">profit_to_prob_func</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">profit_to_prob_func</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;max_profit_per_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">max_profit</span> <span class="o">/</span> <span class="n">df</span><span class="o">.</span><span class="n">parcel_size</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">max_profit_per_size</span><span class="o">.</span><span class="n">values</span> <span class="o">/</span> <span class="n">df</span><span class="o">.</span><span class="n">max_profit_per_size</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">net_units</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">target_units</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO&quot;</span><span class="p">,</span>
+                  <span class="s2">&quot;MATCH DEMAND&quot;</span><span class="p">)</span>
+            <span class="n">build_idx</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+        <span class="k">elif</span> <span class="n">target_units</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">build_idx</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># we don&#39;t know how many developments we will need, as they differ in net_units.</span>
+            <span class="c1"># If all developments have net_units of 1 than we need target_units of them.</span>
+            <span class="c1"># So we choose the smaller of available developments and target_units.</span>
+            <span class="n">choices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">),</span> <span class="n">target_units</span><span class="p">),</span>
+                                       <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">tot_units</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">net_units</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">choices</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">tot_units</span><span class="p">,</span> <span class="n">target_units</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">build_idx</span> <span class="o">=</span> <span class="n">choices</span><span class="p">[:</span><span class="n">ind</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">drop_after_build</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">feasibility</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feasibility</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">build_idx</span><span class="p">)</span>
+
+        <span class="n">new_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">build_idx</span><span class="p">]</span>
+        <span class="n">new_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;parcel_id&quot;</span>
+        <span class="k">return</span> <span class="n">new_df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Developer.merge"><a class="viewcode-back" href="../../../developer/index.html#urbansim.developer.developer.Developer.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="n">old_df</span><span class="p">,</span> <span class="n">new_df</span><span class="p">,</span> <span class="n">return_index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Merge two dataframes of buildings.  The old dataframe is</span>
+<span class="sd">        usually the buildings dataset and the new dataframe is a modified</span>
+<span class="sd">        (by the user) version of what is returned by the pick method.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        old_df : dataframe</span>
+<span class="sd">            Current set of buildings</span>
+<span class="sd">        new_df : dataframe</span>
+<span class="sd">            New buildings to add, usually comes from this module</span>
+<span class="sd">        return_index : bool</span>
+<span class="sd">            If return_index is true, this method will return the new</span>
+<span class="sd">            index of new_df (which changes in order to create a unique</span>
+<span class="sd">            index after the merge)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        df : dataframe</span>
+<span class="sd">            Combined DataFrame of buildings, makes sure indexes don&#39;t overlap</span>
+<span class="sd">        index : pd.Index</span>
+<span class="sd">            If and only if return_index is True, return the new index for the</span>
+<span class="sd">            new_df dataframe (which changes in order to create a unique index</span>
+<span class="sd">            after the merge)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">maxind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">old_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">new_df</span> <span class="o">=</span> <span class="n">new_df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">new_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">new_df</span><span class="o">.</span><span class="n">index</span> <span class="o">+</span> <span class="n">maxind</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">concat_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">old_df</span><span class="p">,</span> <span class="n">new_df</span><span class="p">],</span> <span class="n">verify_integrity</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">concat_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;building_id&#39;</span>
+
+        <span class="k">if</span> <span class="n">return_index</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">concat_df</span><span class="p">,</span> <span class="n">new_df</span><span class="o">.</span><span class="n">index</span>
+
+        <span class="k">return</span> <span class="n">concat_df</span></div></div>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, UrbanSim Inc.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

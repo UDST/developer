@@ -1,0 +1,1269 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Real Estate Development Models &mdash; developer 0.3.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="developer 0.3.0 documentation" href="index.html"/>
+        <link rel="next" title="Examples" href="examples.html"/>
+        <link rel="prev" title="Getting Started" href="gettingstarted.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> developer
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Real Estate Development Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#major-changes">Major Changes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#input-output">Input/Output</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#construction-financing">Construction Financing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#callback-access-to-profit-calculation">Callback Access to Profit Calculation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#callback-access-to-development-selection">Callback Access to Development Selection</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-developer.sqftproforma">Square Foot Pro Forma API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-developer.develop">Developer Model API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">developer</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Real Estate Development Models</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/developer.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="real-estate-development-models">
+<h1>Real Estate Development Models<a class="headerlink" href="#real-estate-development-models" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This package builds on the existing <a class="reference external" href="https://github.com/UDST/urbansim/tree/master/urbansim/developer/">developer model</a> included in the UrbanSim
+library. Some of the key changes are highlighted here, but it may be helpful to
+refer to the old version&#8217;s <a class="reference external" href="http://udst.github.io/urbansim/developer/index.html">documentation</a> for a more detailed
+comparison.</p>
+</div>
+<p>The real estate development models included in this module are designed to
+implement pencil out pro formas, which generally measure the cash inflows and
+outflows of a potential investment (in this case, real estate development)
+with the outcome being some measure of profitability or return on investment.
+Pro formas would normally be performed in a spreadsheet program (e.g. Excel),
+but are implemented in vectorized Python implementations so that many (think
+millions) of pro formas can be performed at a time.</p>
+<p>The functionality is split into two modules - the square foot pro forma and
+the developer model - as there are many use cases that call for the pro formas
+without the developer model.  The <code class="docutils literal"><span class="pre">sqftproforma</span></code> module computes real
+estate feasibility for a set of parcels dependent on allowed uses, prices,
+and building costs, but does not actually <em>build</em> anything (both figuratively
+and literally).  The <code class="docutils literal"><span class="pre">develop</span></code> module decides how much to build,
+then picks among the set of feasible buildings attempting to meet demand,
+and adds the new buildings to the set of current buildings.  Thus
+<code class="docutils literal"><span class="pre">develop</span></code> is primarily useful in the context of an urban forecast.</p>
+<p>An example of the sample code required to generate the set of feasible
+buildings is shown below.  This code comes from the <code class="docutils literal"><span class="pre">utils</span></code> module of the
+<a class="reference external" href="https://github.com/urbansim/urbansim_parcels/sd_example">urbansim_parcels</a>
+San Diego demo.  Notice that the SqFtProForma is
+first initialized and a DataFrame of parcels is tested for feasibliity (each
+individual parcel is tested for feasibility).  Each <em>use</em> (e.g. retail, office,
+residential, etc) is assigned a price per parcel, typically from empirical data
+of currents rents and prices in the city but can be the result of forecast
+rents and prices as well.  The <code class="docutils literal"><span class="pre">lookup</span></code> function is then called with a
+specific building <code class="docutils literal"><span class="pre">form</span></code> and the pro forma returns whether that form is
+profitable for each parcel.</p>
+<p>A large number of assumptions enter in to the computation of profitability
+and these are set in the <a class="reference external" href="#developer.sqftproforma.SqFtProForma">SqFtProForma</a>
+module, and include such things as the set of <code class="docutils literal"><span class="pre">uses</span></code> to model,
+the mix of <code class="docutils literal"><span class="pre">uses</span></code> into <code class="docutils literal"><span class="pre">forms</span></code>, the impact of parking requirements,
+parking costs, building costs at different heights (taller buildings typically
+requiring more expensive construction methods), the profit ratio required,
+the building efficiency, parcel coverage, and cap rate to name a few. See
+the API documentation for the complete list and detailed descriptions. The
+newest version of this model allows for loading configurations from a YAML
+file; the examples in the <code class="docutils literal"><span class="pre">urbansim_parcels</span></code> repository include a <a class="reference external" href="https://github.com/urbansim/urbansim_parcels/blob/master/sd_example/configs/proforma.yaml">YAML
+file</a> with default configurations.</p>
+<p>Note that unit mixes don&#8217;t typically enter in to the square foot pro forma
+(hence the name). After discussions with numerous real estate developers,
+we found that most developers thought first and foremost in terms of price and
+cost per square foot and the arbitrage between, and second in terms of the
+translation to unit sizes and mixes in a given market (also larger and
+smaller units of a given unit type will typically lower and raise their
+prices as stands to reason). Since getting data on unit mixes in the current
+building stock is extremely difficult, most feasibility computations here
+happen on a square foot basis and the <code class="docutils literal"><span class="pre">developer</span></code> model below handles the
+translation to units.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cfg</span> <span class="o">=</span> <span class="n">misc</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="s1">&#39;proforma.yaml&#39;</span><span class="p">)</span>
+
+<span class="n">pf</span> <span class="o">=</span> <span class="p">(</span><span class="n">sqftproforma</span><span class="o">.</span><span class="n">SqFtProForma</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">str_or_buffer</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">cfg</span> <span class="k">else</span> <span class="n">sqftproforma</span><span class="o">.</span><span class="n">SqFtProForma</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">())</span>
+
+<span class="k">for</span> <span class="n">use</span> <span class="ow">in</span> <span class="n">pf</span><span class="o">.</span><span class="n">uses</span><span class="p">:</span>
+    <span class="n">parcels</span><span class="p">[</span><span class="n">use</span><span class="p">]</span> <span class="o">=</span> <span class="n">parcel_price_callback</span><span class="p">(</span><span class="n">use</span><span class="p">)</span>
+
+<span class="n">feasibility</span> <span class="o">=</span> <span class="n">lookup_by_form</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">parcel_use_allowed_callback</span><span class="p">,</span> <span class="n">pf</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">orca</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span><span class="s1">&#39;feasibility&#39;</span><span class="p">,</span> <span class="n">feasibility</span><span class="p">)</span>
+
+<span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">pf</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">forms</span><span class="p">:</span>
+    <span class="nb">print</span> <span class="s2">&quot;Computing feasibility for form </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">form</span>
+    <span class="n">d</span><span class="p">[</span><span class="n">form</span><span class="p">]</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">form</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="n">parcel_use_allowed_callback</span><span class="p">(</span><span class="n">form</span><span class="p">)])</span>
+
+<span class="n">feasibility</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">keys</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">sim</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span><span class="s2">&quot;feasibility&quot;</span><span class="p">,</span> <span class="n">feasibility</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">develop</span></code> module is responsible for picking among feasible buildings
+in order to meet demand.  An example usage of the model is shown below - which
+is also lifted from the <a class="reference external" href="https://github.com/urbansim/urbansim_parcels/sd_example">urbansim_parcels</a> San Diego demo.</p>
+<p>This module provides a simple utility to compute the number of units (or
+amount of floorspace) to build. The developer model itself is agnostic to which parcels
+the user passes it, and the user is responsible for knowing at which level of
+geography demand is assumed to operate. The developer model then chooses
+which buildings to &#8220;build.&#8221; Previous workflows have typically involved
+selecting buildings based on random choice weighted by profitability, with an
+expected vacancy rate acting as a control on the number of buildings built. In
+this version, there are new features that allow a bit more control over this
+process (see <a class="reference internal" href="#callback-access-to-development-selection">Callback Access to Development Selection</a>).</p>
+<p>The only remaining steps are then &#8220;bookkeeping&#8221; in the sense that some
+additional fields might need to be added (<code class="docutils literal"><span class="pre">year_built</span></code> or a conversion from
+developer <code class="docutils literal"><span class="pre">forms</span></code> to <code class="docutils literal"><span class="pre">building_type_ids</span></code>). Finally the new buildings
+and old buildings need to be merged in such a way that the old ids are
+preserved and not duplicated (new ids are assigned at the max of the old
+ids+1 and then incremented from there). If using a development pipeline,
+utility functions in <cite>urbansim_parcels</cite> provide a way to properly add
+new buildings to the pipeline, rather than directly to the building table.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cfg</span> <span class="o">=</span> <span class="n">misc</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="s1">&#39;developer.yaml&#39;</span><span class="p">)</span>
+<span class="n">target_units</span> <span class="o">=</span> <span class="p">(</span><span class="n">num_units_to_build</span>
+                <span class="ow">or</span> <span class="n">compute_units_to_build</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">agents</span><span class="p">),</span>
+                                          <span class="n">buildings</span><span class="p">[</span><span class="n">supply_fname</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span>
+                                          <span class="n">target_vacancy</span><span class="p">))</span>
+
+<span class="n">dev</span> <span class="o">=</span> <span class="n">develop</span><span class="o">.</span><span class="n">Developer</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">feasibility</span><span class="o">.</span><span class="n">to_frame</span><span class="p">(),</span> <span class="n">forms</span><span class="p">,</span>
+                                  <span class="n">target_units</span><span class="p">,</span> <span class="n">parcel_size</span><span class="p">,</span>
+                                  <span class="n">ave_unit_size</span><span class="p">,</span> <span class="n">current_units</span><span class="p">,</span>
+                                  <span class="n">year</span><span class="p">,</span> <span class="n">str_or_buffer</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
+
+<span class="n">new_buildings</span> <span class="o">=</span> <span class="n">dev</span><span class="o">.</span><span class="n">pick</span><span class="p">(</span><span class="n">profit_to_prob_func</span><span class="p">,</span> <span class="n">custom_selection_func</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">year</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">new_buildings</span><span class="p">[</span><span class="s2">&quot;year_built&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">year</span>
+
+<span class="k">if</span> <span class="n">form_to_btype_callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">new_buildings</span><span class="p">[</span><span class="s2">&quot;building_type_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_buildings</span><span class="p">[</span><span class="s2">&quot;form&quot;</span><span class="p">]</span><span class="o">.</span>\
+        <span class="n">apply</span><span class="p">(</span><span class="n">form_to_btype_callback</span><span class="p">)</span>
+
+<span class="n">all_buildings</span> <span class="o">=</span> <span class="n">dev</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">buildings</span><span class="o">.</span><span class="n">to_frame</span><span class="p">(</span><span class="n">buildings</span><span class="o">.</span><span class="n">local_columns</span><span class="p">),</span>
+                          <span class="n">new_buildings</span><span class="p">[</span><span class="n">buildings</span><span class="o">.</span><span class="n">local_columns</span><span class="p">])</span>
+
+<span class="n">sim</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span><span class="s2">&quot;buildings&quot;</span><span class="p">,</span> <span class="n">all_buildings</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="major-changes">
+<h2>Major Changes<a class="headerlink" href="#major-changes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="input-output">
+<h3>Input/Output<a class="headerlink" href="#input-output" title="Permalink to this headline">¶</a></h3>
+<p>There are now methods in the <code class="docutils literal"><span class="pre">SqFtProForma</span></code> and <code class="docutils literal"><span class="pre">Developer</span></code> classes to
+load with configurations in a similar way to other <a class="reference external" href="http://udst.github.io/urbansim/models/statistical.html#yaml-persistence">UrbanSim models</a>.
+The pro forma and developer model configurations can be saved as YAML files and
+loaded again at another time. Use the <code class="docutils literal"><span class="pre">to_yaml</span></code> and <code class="docutils literal"><span class="pre">from_yaml</span></code> methods
+to save files to disk and load them back as configurations. The <code class="docutils literal"><span class="pre">SqFtProForma</span></code>
+class also has a <code class="docutils literal"><span class="pre">from_defaults</span></code> method to load default values.
+Here’s an example of loading a pro forma model from defaults and saving custom
+settings back to YAML:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">proforma</span> <span class="o">=</span> <span class="n">SqFtProForma</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">()</span>
+<span class="n">proforma</span><span class="o">.</span><span class="n">to_yaml</span><span class="p">(</span><span class="s1">&#39;proforma.yaml&#39;</span><span class="p">)</span>
+
+<span class="c1"># Make changes manually to YAML file</span>
+
+<span class="n">new_proforma</span> <span class="o">=</span> <span class="n">SqFtProForma</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="s1">&#39;modified_proforma.yaml&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="construction-financing">
+<h3>Construction Financing<a class="headerlink" href="#construction-financing" title="Permalink to this headline">¶</a></h3>
+<p>One missing piece in profit calculations in the previous version of the model
+is the fact that typically, real estate developers must secure financing
+to fund the construction of buildings, and the cost of interest and fees must
+be taken into account when calculating the final profitability of the building.</p>
+<p>Several new attributes have been added to the SqFtProForma object. Default
+values in dictionary format are below. For more information on each of these
+attributes, see <a class="reference external" href="#developer.sqftproforma.SqFtProForma">API documentation</a>.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s1">&#39;construction_months&#39;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s1">&#39;industrial&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">12.0</span><span class="p">,</span> <span class="mf">14.0</span><span class="p">,</span> <span class="mf">18.0</span><span class="p">,</span> <span class="mf">24.0</span><span class="p">],</span>
+  <span class="s1">&#39;office&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">12.0</span><span class="p">,</span> <span class="mf">14.0</span><span class="p">,</span> <span class="mf">18.0</span><span class="p">,</span> <span class="mf">24.0</span><span class="p">],</span>
+  <span class="s1">&#39;residential&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">12.0</span><span class="p">,</span> <span class="mf">14.0</span><span class="p">,</span> <span class="mf">18.0</span><span class="p">,</span> <span class="mf">24.0</span><span class="p">],</span>
+  <span class="s1">&#39;retail&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">12.0</span><span class="p">,</span> <span class="mf">14.0</span><span class="p">,</span> <span class="mf">18.0</span><span class="p">,</span> <span class="mf">24.0</span><span class="p">]},</span>
+<span class="s1">&#39;construction_sqft_for_months&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">20000</span><span class="p">,</span> <span class="mi">50000</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">],</span>
+<span class="s1">&#39;loan_to_cost_ratio&#39;</span><span class="p">:</span> <span class="o">.</span><span class="mi">7</span><span class="p">,</span>
+<span class="s1">&#39;drawdown_factor&#39;</span><span class="p">:</span> <span class="o">.</span><span class="mi">6</span><span class="p">,</span>
+<span class="s1">&#39;interest_rate&#39;</span><span class="p">:</span> <span class="o">.</span><span class="mi">05</span><span class="p">,</span>
+<span class="s1">&#39;loan_fees&#39;</span><span class="p">:</span> <span class="o">.</span><span class="mi">02</span>
+</pre></div>
+</div>
+<p>In this version of the pro forma model, &#8220;total development cost&#8221; is derived
+from the total building cost, along with the attributes above:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># total_construction_costs calculated above</span>
+<span class="n">loan_amount</span> <span class="o">=</span> <span class="n">total_construction_costs</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">loan_to_cost_ratio</span>
+<span class="n">interest</span> <span class="o">=</span> <span class="p">(</span><span class="n">loan_amount</span>
+           <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">drawdown_factor</span>
+           <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interest_rate</span> <span class="o">/</span> <span class="mi">12</span> <span class="o">*</span> <span class="n">months</span><span class="p">))</span>
+<span class="n">points</span> <span class="o">=</span> <span class="n">loan_amount</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">loan_fees</span>
+<span class="n">total_financing_costs</span> <span class="o">=</span> <span class="n">interest</span> <span class="o">+</span> <span class="n">points</span>
+<span class="n">total_development_costs</span> <span class="o">=</span> <span class="p">(</span><span class="n">total_construction_costs</span>
+                          <span class="o">+</span> <span class="n">total_financing_costs</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="callback-access-to-profit-calculation">
+<h3>Callback Access to Profit Calculation<a class="headerlink" href="#callback-access-to-profit-calculation" title="Permalink to this headline">¶</a></h3>
+<p>In the core of the pro forma module, profitability for a set of potential
+development sites (typically parcels) is calculated in a set of steps:</p>
+<ol class="arabic simple">
+<li>Read DataFrame of development sites.</li>
+<li>Based on key columns in DataFrame, generate NumPy array of costs, with sites as columns and potential floor-to-area ratios (FARs) as rows.</li>
+<li>Generate NumPy array of revenues with the same structure as costs.</li>
+<li>Subtract costs from revenues to calculate profit (for every site, for every FAR).</li>
+<li>For each site, pick the most profitable FAR, and return values for that FAR, including development costs, construction time, etc.</li>
+</ol>
+<p>In the previous version of this model, the only control the user had into this
+calculation was through values in the initial DataFrame. In this new version,
+users can now pass callback functions to the <code class="docutils literal"><span class="pre">lookup()</span></code> method to
+adjust the calculation at different stages, using the following parameters:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">modify_df</span></code>: Modify the input DataFrame. This can of course be done before passing into the pick() method, but this allows columns to be calculated using attributes of the Developer object.</li>
+<li><code class="docutils literal"><span class="pre">modify_costs</span></code>, <code class="docutils literal"><span class="pre">modify_revenues</span></code>, and <code class="docutils literal"><span class="pre">modify_profit</span></code>: Modify the NumPy ndarrays that represent costs and revenues for each sites and FAR.</li>
+</ul>
+<p>There are specific parameters that each of these callback functions must
+include; see <a class="reference external" href="#developer.sqftproforma.SqFtProForma.lookup">documentation</a>
+for details. For example, let&#8217;s look at one result based on a test parcel
+dataset:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pf</span> <span class="o">=</span> <span class="n">SqFtProForma</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">()</span>
+<span class="n">pf</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="s1">&#39;residential&#39;</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This simple lookup produces this result (table is simplified for example):</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="17%" />
+<col width="28%" />
+<col width="28%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">parcel</th>
+<th class="head">cost</th>
+<th class="head">revenue</th>
+<th class="head">profit</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>a</td>
+<td>4,922,490</td>
+<td>8,960,000</td>
+<td>4,037,510</td>
+</tr>
+<tr class="row-odd"><td>b</td>
+<td>13,821,510</td>
+<td>26,880,000</td>
+<td>13,058,490</td>
+</tr>
+<tr class="row-even"><td>c</td>
+<td>28,805,616</td>
+<td>53,760,000</td>
+<td>24,954,384</td>
+</tr>
+</tbody>
+</table>
+<p>Let&#8217;s say we believe that revenues will be additionally reduced by 20% due to
+an external factor, for all sites in this region. We can apply a simple
+intervention to this calculation using a callback.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">revenue_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">revenues</span><span class="p">):</span>
+    <span class="n">revenues</span> <span class="o">=</span> <span class="n">revenues</span> <span class="o">*</span> <span class="o">.</span><span class="mi">8</span>
+    <span class="k">return</span> <span class="n">revenues</span>
+
+<span class="n">pf</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="s1">&#39;residential&#39;</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">modify_revenues</span><span class="o">=</span><span class="n">revenue_callback</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This gives us an identical cost column, but changes to the revenue and profit:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="17%" />
+<col width="28%" />
+<col width="28%" />
+<col width="28%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">parcel</th>
+<th class="head">cost</th>
+<th class="head">revenue</th>
+<th class="head">profit</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>a</td>
+<td>4,922,490</td>
+<td>7,168,000</td>
+<td>2,245,510</td>
+</tr>
+<tr class="row-odd"><td>b</td>
+<td>13,821,510</td>
+<td>21,504,000</td>
+<td>7,682,490</td>
+</tr>
+<tr class="row-even"><td>c</td>
+<td>28,805,616</td>
+<td>43,008,000</td>
+<td>14,202,384</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="callback-access-to-development-selection">
+<h3>Callback Access to Development Selection<a class="headerlink" href="#callback-access-to-development-selection" title="Permalink to this headline">¶</a></h3>
+<p>The previous version of the developer model has the following rules for
+selecting parcels to build, based on a number of <code class="docutils literal"><span class="pre">target_units</span></code> to build,
+and a probability associated with each development site, which can be generated
+using a custom function:</p>
+<ol class="arabic simple">
+<li>If number of profitable sites is less than <code class="docutils literal"><span class="pre">target_units</span></code>, build all sites</li>
+<li>If <code class="docutils literal"><span class="pre">target_units</span></code> is 0 or less, build no sites</li>
+<li>If number of profitable sites is greater than <code class="docutils literal"><span class="pre">target_units</span></code>, select a number of sites equal to <code class="docutils literal"><span class="pre">target_units</span></code> based on probability (calculated from profitability unless otherwise defined)</li>
+</ol>
+<p>In this version, users can pass a callback function to circumvent this entire
+process and select sites based on entirely custom logic, using information
+in the DataFrame passed to the <code class="docutils literal"><span class="pre">pick()</span></code> method. The following example
+passes a function that selects all developments that have a profit per square
+foot larger than 10:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dev</span> <span class="o">=</span> <span class="n">develop</span><span class="o">.</span><span class="n">Developer</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">feasibility</span><span class="o">.</span><span class="n">to_frame</span><span class="p">(),</span> <span class="n">forms</span><span class="p">,</span>
+                             <span class="n">target_units</span><span class="p">,</span> <span class="n">parcel_size</span><span class="p">,</span>
+                             <span class="n">ave_unit_size</span><span class="p">,</span> <span class="n">current_units</span><span class="p">,</span>
+                             <span class="n">year</span><span class="p">,</span> <span class="n">str_or_buffer</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">custom_selection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+    <span class="n">min_profit_per_sqft</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;BUILDING ALL BUILDINGS WITH PROFIT &gt; $</span><span class="si">{:.2f}</span><span class="s2"> / sqft&quot;</span>
+          <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">min_profit_per_sqft</span><span class="p">))</span>
+    <span class="n">profitable</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">max_profit_per_size</span> <span class="o">&gt;</span> <span class="n">min_profit_per_sqft</span><span class="p">]</span>
+    <span class="n">build_idx</span> <span class="o">=</span> <span class="n">profitable</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+    <span class="k">return</span> <span class="n">build_idx</span>
+
+<span class="n">new_buildings</span> <span class="o">=</span> <span class="n">dev</span><span class="o">.</span><span class="n">pick</span><span class="p">(</span><span class="n">custom_selection_func</span><span class="o">=</span><span class="n">custom_selection</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>As with the previous set of callback functions, there is a strict set of
+parameters that are required. See <a class="reference external" href="#developer.develop.Developer.pick">documentation</a> for details.</p>
+</div>
+</div>
+<div class="section" id="module-developer.sqftproforma">
+<span id="square-foot-pro-forma-api"></span><h2>Square Foot Pro Forma API<a class="headerlink" href="#module-developer.sqftproforma" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="developer.sqftproforma.SqFtProForma">
+<em class="property">class </em><code class="descclassname">developer.sqftproforma.</code><code class="descname">SqFtProForma</code><span class="sig-paren">(</span><em>parcel_sizes</em>, <em>fars</em>, <em>uses</em>, <em>residential_uses</em>, <em>forms</em>, <em>profit_factor</em>, <em>building_efficiency</em>, <em>parcel_coverage</em>, <em>cap_rate</em>, <em>parking_rates</em>, <em>sqft_per_rate</em>, <em>parking_configs</em>, <em>costs</em>, <em>heights_for_costs</em>, <em>parking_sqft_d</em>, <em>parking_cost_d</em>, <em>height_per_story</em>, <em>max_retail_height</em>, <em>max_industrial_height</em>, <em>construction_months</em>, <em>construction_sqft_for_months</em>, <em>loan_to_cost_ratio</em>, <em>drawdown_factor</em>, <em>interest_rate</em>, <em>loan_fees</em>, <em>residential_to_yearly=True</em>, <em>forms_to_test=None</em>, <em>only_built=True</em>, <em>pass_through=None</em>, <em>simple_zoning=False</em>, <em>parcel_filter=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/sqftproforma.html#SqFtProForma"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.sqftproforma.SqFtProForma" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the square foot based pro forma.</p>
+<p>This pro forma has no representation of units - it does not
+differentiate between the rent attained by 1BR, 2BR, or 3BR and change
+the rents accordingly.  This is largely because it is difficult to get
+information on the unit mix in an existing building in order to compute
+its acquisition cost.  Thus rents and costs per sqft are used for new
+and current buildings which assumes there is a constant return on
+increasing and decreasing unit sizes, an extremely useful simplifying
+assumption above the project scale (i.e. city of regional scale)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>parcel_sizes</strong> : list</p>
+<blockquote>
+<div><p>A list of parcel sizes to test.  Interestingly, right now
+the parcel sizes cancel in this style of pro forma computation so
+you can set this to something reasonable for debugging purposes -
+e.g. [10000].  All sizes can be feet or meters as long as they are
+consistently used.</p>
+</div></blockquote>
+<p><strong>fars</strong> : list</p>
+<blockquote>
+<div><p>A list of floor area ratios to use.  FAR is a multiple of
+the parcel size that is the total building bulk that is allowed by
+zoning on the site.  In this case, all of these ratios will be
+tested regardless of zoning and the zoning test will be performed
+later.</p>
+</div></blockquote>
+<p><strong>uses</strong> : list</p>
+<blockquote>
+<div><p>A list of space uses to use within a building.  These are
+mixed into forms.  Generally speaking, you should only have uses
+for which you have an estimate (or observed) values for rents in
+the building.  By default, uses are retail, industrial, office,
+and residential.</p>
+</div></blockquote>
+<p><strong>forms</strong> : dict</p>
+<blockquote>
+<div><p>A dictionary where keys are names for the form and values
+are also dictionaries where keys are uses and values are the
+proportion of that use used in this form.  The values of the
+dictionary should sum to 1.0.  For instance, a form called
+&#8220;residential&#8221; might have a dict of space allocations equal to
+{&#8220;residential&#8221;: 1.0} while a form called &#8220;mixedresidential&#8221;
+might have a dictionary of space allocations equal to
+{&#8220;retail&#8221;: .1, &#8220;residential&#8221; .9] which is 90% residential and
+10% retail.</p>
+</div></blockquote>
+<p><strong>parking_rates</strong> : dict</p>
+<blockquote>
+<div><p>A dict of rates per thousand square feet where keys are the uses
+from the list specified in the attribute above.  The ratios
+are typically in the range 0.5 - 3.0 or similar.  So for
+instance, a key-value pair of &#8220;retail&#8221;: 2.0 would be two parking
+spaces per 1,000 square feet of retail.  This is a per square
+foot pro forma, so the more typically parking ratio of spaces
+per residential unit must be converted to square feet for use in
+this pro forma.</p>
+</div></blockquote>
+<p><strong>sqft_per_rate</strong> : float</p>
+<blockquote>
+<div><p>The number of square feet per unit for use in the
+parking_rates above.  By default this is set to 1,000 but can be
+overridden.</p>
+</div></blockquote>
+<p><strong>parking_configs</strong> : list</p>
+<blockquote>
+<div><p>An expert parameter and is usually unchanged.  By default
+it is set to [&#8216;surface&#8217;, &#8216;deck&#8217;, &#8216;underground&#8217;] and very semantic
+differences in the computation are performed for each of these
+parking configurations.  Generally speaking it will break things
+to change this array, but an item can be removed if that parking
+configuration should not be tested.</p>
+</div></blockquote>
+<p><strong>parking_sqft_d</strong> : dict</p>
+<blockquote>
+<div><p>A dictionary where keys are the three parking
+configurations listed above and values are square foot uses of
+parking spaces in that configuration.  This is to capture the
+fact that surface parking is usually more space intensive
+than deck or underground parking.</p>
+</div></blockquote>
+<p><strong>parking_cost_d</strong> : dict</p>
+<blockquote>
+<div><p>The parking cost for each parking configuration.  Keys are the
+name of the three parking configurations listed above and values
+are dollars PER SQUARE FOOT for parking in that configuration.
+Used to capture the fact that underground and deck are far more
+expensive than surface parking.</p>
+</div></blockquote>
+<p><strong>heights_for_costs</strong> : list</p>
+<blockquote>
+<div><p>A list of &#8220;break points&#8221; as heights at which construction becomes
+more expensive.  Generally these are the heights at which
+construction materials change from wood, to concrete, to steel.
+Costs are also given as lists by use for each of these break
+points and are considered to be valid up to the break point.  A
+list would look something like [15, 55, 120, np.inf].</p>
+</div></blockquote>
+<p><strong>costs</strong> : dict</p>
+<blockquote>
+<div><p>The keys are uses from the attribute above and the values are a
+list of floating point numbers of same length as the
+height_for_costs attribute.  A key-value pair of
+&#8220;residential&#8221;: [160.0, 175.0, 200.0, 230.0] would say that the
+residential use if $160/sqft up to 15ft in total height for the
+building, $175/sqft up to 55ft, $200/sqft up to 120ft, and
+$230/sqft beyond.  A final value in the height_for_costs
+array of np.inf is typical.</p>
+</div></blockquote>
+<p><strong>height_per_story</strong> : float</p>
+<blockquote>
+<div><p>The per-story height for the building used to turn an
+FAR into an actual height.</p>
+</div></blockquote>
+<p><strong>max_retail_height</strong> : float</p>
+<blockquote>
+<div><p>The maximum height of retail buildings to consider.</p>
+</div></blockquote>
+<p><strong>max_industrial_height</strong> : float</p>
+<blockquote>
+<div><p>The maximum height of industrial buildings to consider.</p>
+</div></blockquote>
+<p><strong>construction_months</strong> : dict</p>
+<blockquote>
+<div><p>Analogous to &#8216;costs&#8217;, but for building construction time.
+The keys are uses from the attribute above and the values are a
+list of floating-point numbers of same length as the
+construction_sqft_for_months attribute. A key-value pair of
+&#8220;residential&#8221;: [12.0, 14.0, 18.0, 24.0] along with the default values
+for construction_sqft_for_months below would say that buildings with
+10,000 sq. ft. or less take 12 months, those between 10,000 and 20,000
+sq. ft. take 14 months, etc.</p>
+</div></blockquote>
+<p><strong>construction_sqft_for_months:</strong></p>
+<blockquote>
+<div><p>Analogous to heights_for_costs, but for building construction time.
+A list of &#8220;break points&#8221; as building square footage at which
+construction takes a different length of time. Default values are
+[10000, 20000, 50000, np.inf].</p>
+</div></blockquote>
+<p><strong>loan_to_cost_ratio</strong> : float</p>
+<blockquote>
+<div><p>The proportion of construction loans to the total construction cost.</p>
+</div></blockquote>
+<p><strong>drawdown_factor</strong> : float</p>
+<blockquote>
+<div><p>The factor by which financing cost is reduced by applying interest
+only to funds withdrawn in phases.</p>
+</div></blockquote>
+<p><strong>interest_rate</strong> : float</p>
+<blockquote>
+<div><p>The interest rate for construction loans</p>
+</div></blockquote>
+<p><strong>loan_fees</strong> : float</p>
+<blockquote>
+<div><p>The percentage of loan size that is added to costs as other fees</p>
+</div></blockquote>
+<p><strong>profit_factor</strong> : float</p>
+<blockquote>
+<div><p>The ratio of profit a developer expects to make above the break
+even rent.  Should be greater than 1.0, e.g. a 10% profit would be
+a profit factor of 1.1.</p>
+</div></blockquote>
+<p><strong>building_efficiency</strong> : float</p>
+<blockquote>
+<div><p>The efficiency of the building.  This turns total FAR into the
+amount of space which gets a square foot rent.  The entire building
+gets the cost of course.</p>
+</div></blockquote>
+<p><strong>parcel_coverage</strong> : float</p>
+<blockquote>
+<div><p>The ratio of the building footprint to the parcel size.  Also used
+to turn an FAR into a height to cost properly.</p>
+</div></blockquote>
+<p><strong>cap_rate</strong> : float</p>
+<blockquote>
+<div><p>The rate an investor is willing to pay for a cash flow per year.
+This means $1/year is equivalent to 1/cap_rate present dollars.
+This is a macroeconomic input that is widely available on the
+internet.</p>
+</div></blockquote>
+<p><strong>residential_to_yearly</strong> : boolean (optional)</p>
+<blockquote>
+<div><p>Whether to use the cap rate to convert the residential price from total
+sales price per sqft to rent per sqft</p>
+</div></blockquote>
+<p><strong>forms_to_test</strong> : list of strings (optional)</p>
+<blockquote>
+<div><p>Pass the list of the names of forms to test for feasibility - if set to
+None will use all the forms available in config</p>
+</div></blockquote>
+<p><strong>only_built</strong> : boolean (optional)</p>
+<blockquote>
+<div><p>Only return those buildings that are profitable</p>
+</div></blockquote>
+<p><strong>pass_through</strong> : list of strings (optional)</p>
+<blockquote>
+<div><p>Will be passed to the feasibility lookup function - is used to pass
+variables from the parcel dataframe to the output dataframe, usually
+for debugging</p>
+</div></blockquote>
+<p><strong>simple_zoning: boolean (optional)</strong></p>
+<blockquote>
+<div><p>This can be set to use only max_dua for residential and max_far for
+non-residential.  This can be handy if you want to deal with zoning
+outside of the developer model.</p>
+</div></blockquote>
+<p><strong>parcel_filter</strong> : string (optional)</p>
+<blockquote class="last">
+<div><p>A filter to apply to the parcels data frame to remove parcels from
+consideration - is typically used to remove parcels with buildings
+older than a certain date for historical preservation, but is
+generally useful</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="classmethod">
+<dt id="developer.sqftproforma.SqFtProForma.from_defaults">
+<em class="property">classmethod </em><code class="descname">from_defaults</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/sqftproforma.html#SqFtProForma.from_defaults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.sqftproforma.SqFtProForma.from_defaults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a SqftProForma instance from default values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">SqFtProForma</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="developer.sqftproforma.SqFtProForma.from_yaml">
+<em class="property">classmethod </em><code class="descname">from_yaml</code><span class="sig-paren">(</span><em>yaml_str=None</em>, <em>str_or_buffer=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/sqftproforma.html#SqFtProForma.from_yaml"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.sqftproforma.SqFtProForma.from_yaml" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a SqftProForma instance from a saved YAML configuration.
+Arguments are mutally exclusive.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>yaml_str</strong> : str, optional</p>
+<blockquote>
+<div><p>A YAML string from which to load model.</p>
+</div></blockquote>
+<p><strong>str_or_buffer</strong> : str or file like, optional</p>
+<blockquote>
+<div><p>File name or buffer from which to load YAML.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">SqFtProForma</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="developer.sqftproforma.SqFtProForma.get_ave_cost_sqft">
+<code class="descname">get_ave_cost_sqft</code><span class="sig-paren">(</span><em>form</em>, <em>parking_config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/sqftproforma.html#SqFtProForma.get_ave_cost_sqft"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.sqftproforma.SqFtProForma.get_ave_cost_sqft" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the average cost per sqft for the pro forma for a given form</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>form</strong> : string</p>
+<blockquote>
+<div><p>Get a series representing the average cost per sqft for each form
+in the config</p>
+</div></blockquote>
+<p><strong>parking_config</strong> : string</p>
+<blockquote>
+<div><p>The parking configuration to get debug info for</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>cost</strong> : series</p>
+<blockquote class="last">
+<div><p>A series where the index is the far and the values are the average
+cost per sqft at which the building is &#8220;break even&#8221; given the
+configuration parameters that were passed at run time.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="developer.sqftproforma.SqFtProForma.get_debug_info">
+<code class="descname">get_debug_info</code><span class="sig-paren">(</span><em>form</em>, <em>parking_config</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/sqftproforma.html#SqFtProForma.get_debug_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.sqftproforma.SqFtProForma.get_debug_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the debug info after running the pro forma for a given form and
+parking configuration</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>form</strong> : string</p>
+<blockquote>
+<div><p>The form to get debug info for</p>
+</div></blockquote>
+<p><strong>parking_config</strong> : string</p>
+<blockquote>
+<div><p>The parking configuration to get debug info for</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>debug_info</strong> : dataframe</p>
+<blockquote class="last">
+<div><p>A dataframe where the index is the far with many columns
+representing intermediate steps in the pro forma computation.
+Additional documentation will be added at a later date, although
+many of the columns should be fairly self-expanatory.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="developer.sqftproforma.SqFtProForma.lookup">
+<code class="descname">lookup</code><span class="sig-paren">(</span><em>form</em>, <em>df</em>, <em>modify_df=None</em>, <em>modify_revenues=None</em>, <em>modify_costs=None</em>, <em>modify_profits=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/sqftproforma.html#SqFtProForma.lookup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.sqftproforma.SqFtProForma.lookup" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function does the developer model lookups for all the actual input
+data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>form</strong> : string</p>
+<blockquote>
+<div><p>One of the forms specified in the configuration file</p>
+</div></blockquote>
+<p><strong>df</strong> : DataFrame</p>
+<blockquote>
+<div><p>Pass in a single data frame which is indexed by parcel_id and has
+the following columns</p>
+</div></blockquote>
+<p><strong>modify_df</strong> : function</p>
+<blockquote>
+<div><p>Function to modify lookup DataFrame before profit calculations.
+Must have (self, form, df) as parameters.</p>
+</div></blockquote>
+<p><strong>modify_revenues</strong> : function</p>
+<blockquote>
+<div><p>Function to modify revenue ndarray during profit calculations.
+Must have (self, form, df, revenues) as parameters.</p>
+</div></blockquote>
+<p><strong>modify_costs</strong> : function</p>
+<blockquote>
+<div><p>Function to modify cost ndarray during profit calculations.
+Must have (self, form, df, costs) as parameters.</p>
+</div></blockquote>
+<p><strong>modify_profits</strong> : function</p>
+<blockquote>
+<div><p>Function to modify profit ndarray during profit calculations.
+Must have (self, form, df, profits) as parameters.</p>
+</div></blockquote>
+<p><strong>Input Dataframe Columns</strong></p>
+<p><strong>rent</strong> : dataframe</p>
+<blockquote>
+<div><p>A set of columns, one for each of the uses passed in the
+configuration. Values are yearly rents for that use. Typical column
+names would be &#8220;residential&#8221;, &#8220;retail&#8221;, &#8220;industrial&#8221; and &#8220;office&#8221;</p>
+</div></blockquote>
+<p><strong>land_cost</strong> : series</p>
+<blockquote>
+<div><p>A series representing the CURRENT yearly rent for each parcel.
+Used to compute acquisition costs for the parcel.</p>
+</div></blockquote>
+<p><strong>parcel_size</strong> : series</p>
+<blockquote>
+<div><p>A series representing the parcel size for each parcel.</p>
+</div></blockquote>
+<p><strong>max_far</strong> : series</p>
+<blockquote>
+<div><p>A series representing the maximum far allowed by zoning.  Buildings
+will not be built above these fars.</p>
+</div></blockquote>
+<p><strong>max_height</strong> : series</p>
+<blockquote>
+<div><p>A series representing the maximum height allowed by zoning.
+Buildings will not be built above these heights.  Will pick between
+the min of the far and height, will ignore on of them if one is
+nan, but will not build if both are nan.</p>
+</div></blockquote>
+<p><strong>max_dua</strong> : series, optional</p>
+<blockquote>
+<div><p>A series representing the maximum dwelling units per acre allowed
+by zoning.  If max_dua is passed, the average unit size should be
+passed below to translate from dua to floor space.</p>
+</div></blockquote>
+<p><strong>ave_unit_size</strong> : series, optional</p>
+<blockquote>
+<div><p>This is required if max_dua is passed above, otherwise it is
+optional. This is the same as the parameter to Developer.pick()
+(it should be the same series).</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>index</strong> : Series, int</p>
+<blockquote>
+<div><p>parcel identifiers</p>
+</div></blockquote>
+<p><strong>building_sqft</strong> : Series, float</p>
+<blockquote>
+<div><p>The number of square feet for the building to build.  Keep in mind
+this includes parking and common space.  Will need a helpful
+function to convert from gross square feet to actual usable square
+feet in residential units.</p>
+</div></blockquote>
+<p><strong>building_cost</strong> : Series, float</p>
+<blockquote>
+<div><p>The cost of constructing the building as given by the
+ave_cost_per_sqft from the cost model (for this FAR) and the number
+of square feet.</p>
+</div></blockquote>
+<p><strong>total_cost</strong> : Series, float</p>
+<blockquote>
+<div><p>The cost of constructing the building plus the cost of acquisition
+of the current parcel/building.</p>
+</div></blockquote>
+<p><strong>building_revenue</strong> : Series, float</p>
+<blockquote>
+<div><p>The NPV of the revenue for the building to be built, which is the
+number of square feet times the yearly rent divided by the cap
+rate (with a few adjustment factors including building efficiency).</p>
+</div></blockquote>
+<p><strong>max_profit_far</strong> : Series, float</p>
+<blockquote>
+<div><p>The FAR of the maximum profit building (constrained by the max_far
+and max_height from the input dataframe).</p>
+</div></blockquote>
+<p>max_profit :</p>
+<blockquote class="last">
+<div><p>The profit for the maximum profit building (constrained by the
+max_far and max_height from the input dataframe).</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="developer.sqftproforma.SqFtProForma.to_dict">
+<code class="descname">to_dict</code><a class="headerlink" href="#developer.sqftproforma.SqFtProForma.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dict representation of a SqftProForma instance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="developer.sqftproforma.SqFtProForma.to_yaml">
+<code class="descname">to_yaml</code><span class="sig-paren">(</span><em>str_or_buffer=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/sqftproforma.html#SqFtProForma.to_yaml"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.sqftproforma.SqFtProForma.to_yaml" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save a model representation to YAML.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>str_or_buffer</strong> : str or file like, optional</p>
+<blockquote>
+<div><p>By default a YAML string is returned. If a string is
+given here the YAML will be written to that file.
+If an object with a <code class="docutils literal"><span class="pre">.write</span></code> method is given the
+YAML will be written to that object.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>j</strong> : str</p>
+<blockquote class="last">
+<div><p>YAML is string if <cite>str_or_buffer</cite> is not given.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="developer.sqftproforma.SqFtProFormaReference">
+<em class="property">class </em><code class="descclassname">developer.sqftproforma.</code><code class="descname">SqFtProFormaReference</code><span class="sig-paren">(</span><em>parcel_sizes</em>, <em>fars</em>, <em>forms</em>, <em>profit_factor</em>, <em>parcel_coverage</em>, <em>parking_rates</em>, <em>sqft_per_rate</em>, <em>parking_configs</em>, <em>costs</em>, <em>heights_for_costs</em>, <em>parking_sqft_d</em>, <em>parking_cost_d</em>, <em>height_per_story</em>, <em>max_retail_height</em>, <em>max_industrial_height</em>, <em>construction_sqft_for_months</em>, <em>construction_months</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/sqftproforma.html#SqFtProFormaReference"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.sqftproforma.SqFtProFormaReference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate reference table for square foot pro forma analysis. Table is saved
+as the <cite>reference_dict</cite> attribute.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-developer.develop">
+<span id="developer-model-api"></span><h2>Developer Model API<a class="headerlink" href="#module-developer.develop" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="developer.develop.Developer">
+<em class="property">class </em><code class="descclassname">developer.develop.</code><code class="descname">Developer</code><span class="sig-paren">(</span><em>feasibility</em>, <em>forms</em>, <em>target_units</em>, <em>parcel_size</em>, <em>ave_unit_size</em>, <em>current_units</em>, <em>year=None</em>, <em>bldg_sqft_per_job=400.0</em>, <em>min_unit_size=400</em>, <em>max_parcel_size=200000</em>, <em>drop_after_build=True</em>, <em>residential=True</em>, <em>num_units_to_build=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/develop.html#Developer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.develop.Developer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass the dataframe that is returned by feasibility here</p>
+<p>Can also be a dictionary where keys are building forms and values are
+the individual data frames returned by the proforma lookup routine.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>feasibility</strong> : DataFrame or dict</p>
+<blockquote>
+<div><p>Results from SqftProForma lookup method</p>
+</div></blockquote>
+<p><strong>forms</strong> : string or list</p>
+<blockquote>
+<div><p>One or more of the building forms from the pro forma specification -
+e.g. &#8220;residential&#8221; or &#8220;mixedresidential&#8221; - these are configuration
+parameters passed previously to the pro forma.  If more than one form
+is passed the forms compete with each other (based on profitability)
+for which one gets built in order to meet demand.</p>
+</div></blockquote>
+<p><strong>parcel_size</strong> : series</p>
+<blockquote>
+<div><p>The size of the parcels.  This was passed to feasibility as well,
+but should be passed here as well.  Index should be parcel_ids.</p>
+</div></blockquote>
+<p><strong>ave_unit_size</strong> : series</p>
+<blockquote>
+<div><p>The average residential unit size around each parcel - this is
+indexed by parcel, but is usually a disaggregated version of a
+zonal or accessibility aggregation.</p>
+</div></blockquote>
+<p><strong>current_units</strong> : series</p>
+<blockquote>
+<div><p>The current number of units on the parcel.  Is used to compute the
+net number of units produced by the developer model.  Many times
+the developer model is redeveloping units (demolishing them) and
+is trying to meet a total number of net units produced.</p>
+</div></blockquote>
+<p><strong>year</strong> : int</p>
+<blockquote>
+<div><p>The year of the simulation - will be assigned to &#8216;year_built&#8217; on the
+new buildings</p>
+</div></blockquote>
+<p><strong>bldg_sqft_per_job</strong> : float (default 400.0)</p>
+<blockquote>
+<div><p>The average square feet per job for this building form.</p>
+</div></blockquote>
+<p><strong>min_unit_size</strong> : float</p>
+<blockquote>
+<div><p>Values less than this number in ave_unit_size will be set to this
+number.  Deals with cases where units are currently not built.</p>
+</div></blockquote>
+<p><strong>max_parcel_size</strong> : float</p>
+<blockquote>
+<div><p>Parcels larger than this size will not be considered for
+development - usually large parcels should be specified manually
+in a development projects table.</p>
+</div></blockquote>
+<p><strong>drop_after_build</strong> : bool</p>
+<blockquote>
+<div><p>Whether or not to drop parcels from consideration after they
+have been chosen for development.  Usually this is true so as
+to not develop the same parcel twice.</p>
+</div></blockquote>
+<p><strong>residential: bool</strong></p>
+<blockquote>
+<div><p>If creating non-residential buildings set this to false and
+developer will fill in job_spaces rather than residential_units</p>
+</div></blockquote>
+<p><strong>num_units_to_build: optional, int</strong></p>
+<blockquote class="last">
+<div><p>If num_units_to_build is passed, build this many units rather than
+computing it internally by using the length of agents adn the sum of
+the relevant supply columin - this trusts the caller to know how to
+compute this.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="classmethod">
+<dt id="developer.develop.Developer.from_yaml">
+<em class="property">classmethod </em><code class="descname">from_yaml</code><span class="sig-paren">(</span><em>feasibility</em>, <em>forms</em>, <em>target_units</em>, <em>parcel_size</em>, <em>ave_unit_size</em>, <em>current_units</em>, <em>year=None</em>, <em>yaml_str=None</em>, <em>str_or_buffer=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/develop.html#Developer.from_yaml"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.develop.Developer.from_yaml" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>yaml_str</strong> : str, optional</p>
+<blockquote>
+<div><p>A YAML string from which to load model.</p>
+</div></blockquote>
+<p><strong>str_or_buffer</strong> : str or file like, optional</p>
+<blockquote>
+<div><p>File name or buffer from which to load YAML.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Developer object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="developer.develop.Developer.keep_form_with_max_profit">
+<code class="descname">keep_form_with_max_profit</code><span class="sig-paren">(</span><em>forms=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/develop.html#Developer.keep_form_with_max_profit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.develop.Developer.keep_form_with_max_profit" title="Permalink to this definition">¶</a></dt>
+<dd><p>This converts the dataframe, which shows all profitable forms,
+to the form with the greatest profit, so that more profitable
+forms outcompete less profitable forms.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>forms: list of strings</strong></p>
+<blockquote>
+<div><p>List of forms which compete which other.  Can leave some out.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Nothing.  Goes from a multi-index to a single index with only the</p>
+<p class="last">most profitable form.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="developer.develop.Developer.pick">
+<code class="descname">pick</code><span class="sig-paren">(</span><em>profit_to_prob_func=None</em>, <em>custom_selection_func=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/develop.html#Developer.pick"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.develop.Developer.pick" title="Permalink to this definition">¶</a></dt>
+<dd><p>Choose the buildings from the list that are feasible to build in
+order to match the specified demand.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>profit_to_prob_func: function</strong></p>
+<blockquote>
+<div><p>As there are so many ways to turn the development feasibility
+into a probability to select it for building, the user may pass
+a function which takes the feasibility dataframe and returns
+a series of probabilities.  If no function is passed, the behavior
+of this method will not change</p>
+</div></blockquote>
+<p><strong>custom_selection_func: func</strong></p>
+<blockquote>
+<div><p>User passed function that decides how to select buildings for
+development after probabilities are calculated. Must have
+parameters (self, df, p) and return a numpy array of buildings to
+build (i.e. df.index.values)</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">None if there are no feasible buildings</p>
+<p><strong>new_buildings</strong> : dataframe</p>
+<blockquote class="last">
+<div><p>DataFrame of buildings to add.  These buildings are rows from the
+DataFrame that is returned from feasibility.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="developer.develop.Developer.to_dict">
+<code class="descname">to_dict</code><a class="headerlink" href="#developer.develop.Developer.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dict representation of a SqftProForma instance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="developer.develop.Developer.to_yaml">
+<code class="descname">to_yaml</code><span class="sig-paren">(</span><em>str_or_buffer=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/developer/develop.html#Developer.to_yaml"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#developer.develop.Developer.to_yaml" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save a model representation to YAML.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>str_or_buffer</strong> : str or file like, optional</p>
+<blockquote>
+<div><p>By default a YAML string is returned. If a string is
+given here the YAML will be written to that file.
+If an object with a <code class="docutils literal"><span class="pre">.write</span></code> method is given the
+YAML will be written to that object.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>j</strong> : str</p>
+<blockquote class="last">
+<div><p>YAML is string if <cite>str_or_buffer</cite> is not given.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="gettingstarted.html" class="btn btn-neutral" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, UrbanSim Inc.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

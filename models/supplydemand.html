@@ -1,0 +1,339 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Supply and Demand Accounting &mdash; developer 0.3.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="developer 0.3.0 documentation" href="../index.html"/>
+        <link rel="up" title="Core Models" href="index.html"/>
+        <link rel="next" title="Transition and Relocation Models" href="transrelo.html"/>
+        <link rel="prev" title="Statistical Models" href="statistical.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> developer
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Core Models</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#introduction">Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#contents">Contents</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="statistical.html">Statistical Models</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Supply and Demand Accounting</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#module-urbansim.models.supplydemand">API</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="transrelo.html">Transition and Relocation Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util.html">Model Related Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="urbanchoice.html">Location Choice Utilities</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Real Estate Development Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils/index.html">UrbanSim Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../maps/index.html">DataFrame Explorer</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">developer</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Core Models</a> &raquo;</li>
+        
+      <li>Supply and Demand Accounting</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/models/supplydemand.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="supply-and-demand-accounting">
+<span id="supply-and-demand"></span><h1>Supply and Demand Accounting<a class="headerlink" href="#supply-and-demand-accounting" title="Permalink to this headline">¶</a></h1>
+<p>Regression models of real estate prices don&#8217;t account for
+supply and demand affects. The <code class="docutils literal"><span class="pre">supplydemand</span></code> module has models that
+work in tandem with <a class="reference internal" href="statistical.html#statistical-models"><span class="std std-ref">location choice models</span></a>
+to estimate supply and demand and adjust real estate prices
+to compensate for mismatches.</p>
+<div class="section" id="module-urbansim.models.supplydemand">
+<span id="api"></span><h2>API<a class="headerlink" href="#module-urbansim.models.supplydemand" title="Permalink to this headline">¶</a></h2>
+<p>Tools for modeling how supply and demand affect real estate prices.</p>
+<dl class="function">
+<dt id="urbansim.models.supplydemand.supply_and_demand">
+<code class="descclassname">urbansim.models.supplydemand.</code><code class="descname">supply_and_demand</code><span class="sig-paren">(</span><em>lcm</em>, <em>choosers</em>, <em>alternatives</em>, <em>alt_segmenter</em>, <em>price_col</em>, <em>base_multiplier=None</em>, <em>clip_change_low=0.75</em>, <em>clip_change_high=1.25</em>, <em>iterations=5</em>, <em>multiplier_func=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/models/supplydemand.html#supply_and_demand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.models.supplydemand.supply_and_demand" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adjust real estate prices to compensate for supply and demand effects.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>lcm</strong> : LocationChoiceModel</p>
+<blockquote>
+<div><p>Used to calculate the probability of agents choosing among
+alternatives. Must be fully configured and fitted.</p>
+</div></blockquote>
+<p><strong>choosers</strong> : pandas.DataFrame</p>
+<p><strong>alternatives</strong> : pandas.DataFrame</p>
+<p><strong>alt_segmenter</strong> : str, array, or pandas.Series</p>
+<blockquote>
+<div><p>Will be used to segment alternatives and probabilities to do
+comparisons of supply and demand by submarket.
+If a string, it is expected to be the name of a column
+in <cite>alternatives</cite>. If a Series it should have the same index
+as <cite>alternatives</cite>.</p>
+</div></blockquote>
+<p><strong>price_col</strong> : str</p>
+<blockquote>
+<div><p>The name of the column in <cite>alternatives</cite> that corresponds to price.
+This column is what is adjusted by this model.</p>
+</div></blockquote>
+<p><strong>base_multiplier</strong> : pandas.Series, optional</p>
+<blockquote>
+<div><p>A series describing a starting multiplier for submarket prices.
+Index should be submarket IDs.</p>
+</div></blockquote>
+<p><strong>clip_change_low</strong> : float, optional</p>
+<blockquote>
+<div><p>The minimum amount by which to multiply prices each iteration.</p>
+</div></blockquote>
+<p><strong>clip_change_high</strong> : float, optional</p>
+<blockquote>
+<div><p>The maximum amount by which to multiply prices each iteration.</p>
+</div></blockquote>
+<p><strong>iterations</strong> : int, optional</p>
+<blockquote>
+<div><p>Number of times to update prices based on supply/demand comparisons.</p>
+</div></blockquote>
+<p><strong>multiplier_func</strong> : function (returns Series, boolean)</p>
+<blockquote>
+<div><p>A function which takes separate demand and supply Series
+and returns a tuple where the first item is a Series with the
+ratio of new price to old price (all indexes should be the same) -
+by default the ratio of demand to supply is the ratio of the new
+price to the old price.  The second return value is a
+boolean which when True tells this module to stop looping (that
+convergence has been satisfied)</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>new_prices</strong> : pandas.Series</p>
+<blockquote>
+<div><p>Equivalent of the <cite>price_col</cite> in <cite>alternatives</cite>.</p>
+</div></blockquote>
+<p><strong>submarkets_ratios</strong> : pandas.Series</p>
+<blockquote class="last">
+<div><p>Price adjustment ratio for each submarket. If <cite>base_multiplier</cite> is
+given this will be a cummulative multiplier including the
+<cite>base_multiplier</cite> and the multipliers calculated for this year.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="transrelo.html" class="btn btn-neutral float-right" title="Transition and Relocation Models" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="statistical.html" class="btn btn-neutral" title="Statistical Models" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, UrbanSim Inc.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

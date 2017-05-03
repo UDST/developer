@@ -1,0 +1,552 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Misc. Utilities &mdash; developer 0.3.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="developer 0.3.0 documentation" href="../index.html"/>
+        <link rel="up" title="UrbanSim Utilities" href="index.html"/>
+        <link rel="next" title="Testing Helpers" href="testing.html"/>
+        <link rel="prev" title="YAML Input &amp; Output" href="yamlio.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> developer
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Core Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Real Estate Development Models</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">UrbanSim Utilities</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#about">About</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#contents">Contents</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="yamlio.html">YAML Input &amp; Output</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Misc. Utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#module-urbansim.utils.misc">API</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="testing.html">Testing Helpers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../maps/index.html">DataFrame Explorer</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">developer</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">UrbanSim Utilities</a> &raquo;</li>
+        
+      <li>Misc. Utilities</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/utils/misc.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="misc-utilities">
+<h1>Misc. Utilities<a class="headerlink" href="#misc-utilities" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-urbansim.utils.misc">
+<span id="api"></span><h2>API<a class="headerlink" href="#module-urbansim.utils.misc" title="Permalink to this headline">¶</a></h2>
+<p>Utilities used within urbansim that don&#8217;t yet have a better home.</p>
+<dl class="function">
+<dt id="urbansim.utils.misc.charts_dir">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">charts_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#charts_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.charts_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the directory for the chart configuration files (used by the
+website).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.column_list">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">column_list</code><span class="sig-paren">(</span><em>tables</em>, <em>columns</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#column_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.column_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a list of tables and a list of column names and return the columns
+that are present in the tables.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>tables</strong> : sequence of _DataFrameWrapper or _TableFuncWrapper</p>
+<blockquote>
+<div><p>Could also be sequence of modified pandas.DataFrames, the important
+thing is that they have <code class="docutils literal"><span class="pre">.name</span></code> and <code class="docutils literal"><span class="pre">.columns</span></code> attributes.</p>
+</div></blockquote>
+<p><strong>columns</strong> : sequence of str</p>
+<blockquote>
+<div><p>The column names of interest.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>cols</strong> : list</p>
+<blockquote class="last">
+<div><p>Lists of column names available in the tables.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.column_map">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">column_map</code><span class="sig-paren">(</span><em>tables</em>, <em>columns</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#column_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.column_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a list of tables and a list of column names and resolve which
+columns come from which table.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>tables</strong> : sequence of _DataFrameWrapper or _TableFuncWrapper</p>
+<blockquote>
+<div><p>Could also be sequence of modified pandas.DataFrames, the important
+thing is that they have <code class="docutils literal"><span class="pre">.name</span></code> and <code class="docutils literal"><span class="pre">.columns</span></code> attributes.</p>
+</div></blockquote>
+<p><strong>columns</strong> : sequence of str</p>
+<blockquote>
+<div><p>The column names of interest.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>col_map</strong> : dict</p>
+<blockquote class="last">
+<div><p>Maps table names to lists of column names.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.compute_range">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">compute_range</code><span class="sig-paren">(</span><em>travel_data</em>, <em>attr</em>, <em>travel_time_attr</em>, <em>dist</em>, <em>agg=&lt;function sum&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#compute_range"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.compute_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute a zone-based accessibility query using the urbansim format
+travel data dataframe.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>travel_data</strong> : dataframe</p>
+<blockquote>
+<div><p>The dataframe of urbansim format travel data.  Has from_zone_id as
+first index, to_zone_id as second index, and different impedances
+between zones as columns.</p>
+</div></blockquote>
+<p><strong>attr</strong> : series</p>
+<blockquote>
+<div><p>The attr to aggregate.  Should be indexed by zone_id and the values
+will be aggregated.</p>
+</div></blockquote>
+<p><strong>travel_time_attr</strong> : string</p>
+<blockquote>
+<div><p>The column name in travel_data to use as the impedance.</p>
+</div></blockquote>
+<p><strong>dist</strong> : float</p>
+<blockquote>
+<div><p>The max distance to aggregate up to</p>
+</div></blockquote>
+<p><strong>agg</strong> : function, optional, np.sum by default</p>
+<blockquote class="last">
+<div><p>The numpy function to use for aggregation</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.config">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">config</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the config path for the file with the given filename.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.configs_dir">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">configs_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#configs_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.configs_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the directory for the model configuration files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.data_dir">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">data_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#data_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.data_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the directory for the input data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.df64bitto32bit">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">df64bitto32bit</code><span class="sig-paren">(</span><em>tbl</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#df64bitto32bit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.df64bitto32bit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a Pandas dataframe from 64 bit types to 32 bit types to save
+memory or disk space.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tbl</strong> : The dataframe to convert</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The converted dataframe</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.edits_dir">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">edits_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#edits_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.edits_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the directory for the editable files (used by the
+website).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.get_run_number">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">get_run_number</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#get_run_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.get_run_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a run number for this execution of the model system, for
+identifying the output hdf5 files).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The integer number for this run of the model system.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.maps_dir">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">maps_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#maps_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.maps_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the directory for the map configuration files (used by the
+website).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.models_dir">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">models_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#models_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.models_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the directory for the model configuration files (used by the
+website).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.naicsname">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">naicsname</code><span class="sig-paren">(</span><em>val</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#naicsname"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.naicsname" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function maps NAICS (job codes) from number to name.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.numpymat2df">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">numpymat2df</code><span class="sig-paren">(</span><em>mat</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#numpymat2df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.numpymat2df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sometimes (though not very often) it is useful to convert a numpy matrix
+which has no column names to a Pandas dataframe for use of the Pandas
+functions.  This method converts a 2D numpy matrix to Pandas dataframe
+with default column headers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>mat</strong> : The numpy matrix</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A pandas dataframe with the same data as the input matrix but with columns</p>
+<p class="last">named x0,  x1, ... x[n-1] for the number of columns.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.pandasdfsummarytojson">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">pandasdfsummarytojson</code><span class="sig-paren">(</span><em>df</em>, <em>ndigits=3</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#pandasdfsummarytojson"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.pandasdfsummarytojson" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the result of a</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>df</strong> : The result of a Pandas describe operation.</p>
+<p><strong>ndigits</strong> : int, optional - The number of significant digits to round to.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A json object which captures the describe.  Keys are field names and</p>
+<p>values are dictionaries with all of the indexes returned by the Pandas</p>
+<p class="last">describe.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.reindex">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">reindex</code><span class="sig-paren">(</span><em>series1</em>, <em>series2</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#reindex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.reindex" title="Permalink to this definition">¶</a></dt>
+<dd><p>This reindexes the first series by the second series.  This is an extremely
+common operation that does not appear to  be in Pandas at this time.
+If anyone knows of an easier way to do this in Pandas, please inform the
+UrbanSim developers.</p>
+<p>The canonical example would be a parcel series which has an index which is
+parcel_ids and a value which you want to fetch, let&#8217;s say it&#8217;s land_area.
+Another dataset, let&#8217;s say of buildings has a series which indicate the
+parcel_ids that the buildings are located on, but which does not have
+land_area.  If you pass parcels.land_area as the first series and
+buildings.parcel_id as the second series, this function returns a series
+which is indexed by buildings and has land_area as values and can be
+added to the buildings dataset.</p>
+<p>In short, this is a join on to a different table using a foreign key
+stored in the current table, but with only one attribute rather than
+for a full dataset.</p>
+<p>This is very similar to the pandas &#8220;loc&#8221; function or &#8220;reindex&#8221; function,
+but neither of those functions return the series indexed on the current
+table.  In both of those cases, the series would be indexed on the foreign
+table and would require a second step to change the index.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.reports_dir">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">reports_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#reports_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.reports_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the directory for the report configuration files (used by the
+website).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.runs_dir">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">runs_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#runs_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.runs_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the directory for the run output.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.series64bitto32bit">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">series64bitto32bit</code><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#series64bitto32bit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.series64bitto32bit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a Pandas series from 64 bit types to 32 bit types to save
+memory or disk space.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>s</strong> : The series to convert</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The converted series</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.signif">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">signif</code><span class="sig-paren">(</span><em>val</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#signif"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.signif" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a statistical significance to its ascii representation - this
+should be the same representation created in R.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="urbansim.utils.misc.simulations_dir">
+<code class="descclassname">urbansim.utils.misc.</code><code class="descname">simulations_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/urbansim/utils/misc.html#simulations_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#urbansim.utils.misc.simulations_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the directory for the simulation configuration files (used by the
+website).</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="testing.html" class="btn btn-neutral float-right" title="Testing Helpers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="yamlio.html" class="btn btn-neutral" title="YAML Input &amp; Output" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, UrbanSim Inc.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
