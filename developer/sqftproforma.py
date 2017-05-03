@@ -107,6 +107,29 @@ class SqFtProForma(object):
         The maximum height of retail buildings to consider.
     max_industrial_height : float
         The maximum height of industrial buildings to consider.
+    construction_months : dict
+        Analogous to 'costs', but for building construction time.
+        The keys are uses from the attribute above and the values are a
+        list of floating-point numbers of same length as the
+        construction_sqft_for_months attribute. A key-value pair of
+        "residential": [12.0, 14.0, 18.0, 24.0] along with the default values
+        for construction_sqft_for_months below would say that buildings with
+        10,000 sq. ft. or less take 12 months, those between 10,000 and 20,000
+        sq. ft. take 14 months, etc.
+    construction_sqft_for_months:
+        Analogous to heights_for_costs, but for building construction time.
+        A list of "break points" as building square footage at which
+        construction takes a different length of time. Default values are
+        [10000, 20000, 50000, np.inf].
+    loan_to_cost_ratio : float
+        The proportion of construction loans to the total construction cost.
+    drawdown_factor : float
+        The factor by which financing cost is reduced by applying interest
+        only to funds withdrawn in phases.
+    interest_rate : float
+        The interest rate for construction loans
+    loan_fees : float
+        The percentage of loan size that is added to costs as other fees
     profit_factor : float
         The ratio of profit a developer expects to make above the break
         even rent.  Should be greater than 1.0, e.g. a 10% profit would be

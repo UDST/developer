@@ -1,6 +1,10 @@
 Getting Started
 ===============
 
+.. note::
+   This package is in alpha and is actively under development. Please feel
+   free to report bugs or suggest improvements (see `Reporting bugs and contributing`_)
+
 Dependencies
 ^^^^^^^^^^^^
 
