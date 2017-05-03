@@ -8,7 +8,8 @@ Getting Started
 Dependencies
 ^^^^^^^^^^^^
 
-The developer model depends on the following libraries, most of which are in Anaconda:
+The developer model is tested in Python 2.7 and 3.5, and depends on the
+following libraries, most of which are in Anaconda:
 
 * `numpy <http://numpy.org>`__ >= 1.8.0
 * `orca <https://github.com/UDST/orca>`__ >= 1.1

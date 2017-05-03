@@ -93,9 +93,17 @@
 <li class="toctree-l1"><a class="reference internal" href="gettingstarted.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="developer.html">Real Estate Development Models</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#basic-example-with-existing-workflow">Basic Example with Existing Workflow</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#using-occupancy-rates-with-callback-functions">Using Occupancy Rates with Callback Functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#adding-a-development-pipeline">Adding a Development Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#starter-repository-urbansim-parcels">Starter Repository: urbansim_parcels</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#repository-structure">Repository Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-models">Example Models</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#simulation-examples">Simulation Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#base-simulation">Base Simulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adding-a-development-pipeline">Adding a Development Pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-occupancy-rates-with-callback-functions">Using Occupancy Rates with Callback Functions</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -163,17 +171,169 @@
             
   <div class="section" id="examples">
 <h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="basic-example-with-existing-workflow">
-<h2>Basic Example with Existing Workflow<a class="headerlink" href="#basic-example-with-existing-workflow" title="Permalink to this headline">¶</a></h2>
-<p>Example here</p>
+<p>These examples presuppose familiarity with UrbanSim and its typical workflows.
+See the basic <a class="reference external" href="http://udst.github.io/urbansim/gettingstarted.html#a-gentle-introduction-to-urbansim">introduction</a> and <a class="reference external" href="http://udst.github.io/urbansim/examples.html">examples</a> from UrbanSim&#8217;s documentation.</p>
+<div class="section" id="starter-repository-urbansim-parcels">
+<h2>Starter Repository: urbansim_parcels<a class="headerlink" href="#starter-repository-urbansim-parcels" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference external" href="https://github.com/urbansim/urbansim_parcels">urbansim_parcels</a> repository was built as a new &#8220;starter model&#8221; that
+provides boilerplate code to take advantage of new features in this developer
+model. See installation details in the <a class="reference external" href="https://github.com/urbansim/urbansim_parcels">readme</a>.</p>
+<div class="section" id="repository-structure">
+<h3>Repository Structure<a class="headerlink" href="#repository-structure" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal"><span class="pre">urbansim_parcels</span></code> repository is structured in three directories:</p>
+<ul>
+<li><p class="first"><code class="docutils literal"><span class="pre">/urbansim_parcels</span></code> is the actual Python package that contains the core
+modules with code that interfaces with UrbanSim and the developer model.
+Those that have used <code class="docutils literal"><span class="pre">urbansim_defaults</span></code> or other starter models will
+find the structure very similar:</p>
+<blockquote>
+<div><ul class="simple">
+<li>models.py</li>
+<li>variables.py</li>
+<li>utils.py</li>
+<li>datasources.py</li>
+<li>pipeline_utils.py</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">/sd_example</span></code> and <code class="docutils literal"><span class="pre">/sf_example</span></code> are directories containing an example
+regional model that uses much of the functionality provided in the
+&#8220;base&#8221; modules (e.g. <code class="docutils literal"><span class="pre">urbansim_parcels/models.py</span></code>) but also add their own
+custom models or utility functions (e.g. <code class="docutils literal"><span class="pre">sd_example/custom_models.py</span></code>)
+that overwrite certain Orca registrations from the base model.
+These examples also come with their own configurations and data.
+More information on the example models below.</p>
+</li>
+</ul>
 </div>
-<div class="section" id="using-occupancy-rates-with-callback-functions">
-<h2>Using Occupancy Rates with Callback Functions<a class="headerlink" href="#using-occupancy-rates-with-callback-functions" title="Permalink to this headline">¶</a></h2>
-<p>Example here</p>
+<div class="section" id="example-models">
+<h3>Example Models<a class="headerlink" href="#example-models" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><strong>San Diego</strong>: This is a relatively fully-featured model built off of
+San Diego&#8217;s openly shared data and model code from the <a class="reference external" href="https://github.com/udst/sandiego_urbansim">sandiego_urbansim</a>
+repository in UDST. This model includes Pandana network accessibility
+variables. The data that comes with the repository is a small subset of the
+full data; download instructions for the full dataset are provided in the
+<a class="reference external" href="https://github.com/urbansim/urbansim_parcels">readme</a>. Note: The data is not guaranteed to be up to
+date, and model code has been modified from the original repo.</li>
+<li><strong>San Francisco</strong>: This is based off of the <a class="reference external" href="https://github.com/udst/sanfran_urbansim">sanfran_urbansim</a> repository that
+has long been used as a simple integration test for the UrbanSim library.
+Its features have been modified to work with this new developer model.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="simulation-examples">
+<h2>Simulation Examples<a class="headerlink" href="#simulation-examples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="base-simulation">
+<h3>Base Simulation<a class="headerlink" href="#base-simulation" title="Permalink to this headline">¶</a></h3>
+<p>Running <code class="docutils literal"><span class="pre">simulate.py</span></code> in either example directory runs the model for each
+region with minimal changes from the previous starter models. The major
+difference is that model steps have been modified to work with the new
+developer model. For example, both examples pull configurations for the
+SqFtProForma model from <code class="docutils literal"><span class="pre">configs/proforma.yaml</span></code>, taking advantage of the
+new I/O features.</p>
 </div>
 <div class="section" id="adding-a-development-pipeline">
-<h2>Adding a Development Pipeline<a class="headerlink" href="#adding-a-development-pipeline" title="Permalink to this headline">¶</a></h2>
+<h3>Adding a Development Pipeline<a class="headerlink" href="#adding-a-development-pipeline" title="Permalink to this headline">¶</a></h3>
+<p>The addition of a development pipeline and related helper functions is one of
+two major improvements in this starter model. The <code class="docutils literal"><span class="pre">simulate_pipeline.py</span></code>
+script in either example directory runs a simulation in which, after the
+price models and location choice models are run:</p>
+<ul class="simple">
+<li>Parcels larger than a certain size are split into smaller chunks and
+go through their own pro forma and development models. Qualifying
+development sites are added to the pipeline.</li>
+<li>All other parcels are assessed for profitability in the pro forma model.</li>
+<li>These parcels are added to the pipeline according to the developer model.</li>
+<li>Projects in the pipeline are &#8220;built&#8221; by adding the correct sites to the
+buildings table.</li>
+</ul>
+<p>This workflow introduces some new data structures:</p>
+<ul class="simple">
+<li><strong>Pipeline</strong>: DataFrame indexed by <code class="docutils literal"><span class="pre">project_id</span></code> that contains information
+about how many sites are contained in a project, and when the project is
+due to be completed.</li>
+<li><strong>Sites</strong>: The individual piece of land that a building may be built on. This
+is the unit that the pro forma and developer models operate on, and sites
+are linked to a <code class="docutils literal"><span class="pre">project_id</span></code> and a <code class="docutils literal"><span class="pre">parcel_id</span></code>. A site may be the
+same as a parcel, could contain multiple parcels, and multiple sites can be
+within a parcel. These are contained in the dev_sites table in these
+examples.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The current versions of the pipeline and sites tables support nested sites
+within parcels, but <em>not</em> sites that contain multiple parcels. This is an
+important feature that we plan to add soon.</p>
+</div>
+<p>The <code class="docutils literal"><span class="pre">feasibility_with_pipeline</span></code> step in the simulation script is the
+first place to examine the new functionality. This step calls the function
+of the same name in <code class="docutils literal"><span class="pre">urbansim_parcels/models.py</span></code>, and passes
+the <code class="docutils literal"><span class="pre">pipeline=True</span></code> argument to the helper function:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@orca</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="s1">&#39;feasibility_with_pipeline&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">feasibility_with_pipeline</span><span class="p">(</span><span class="n">parcels</span><span class="p">,</span>
+                              <span class="n">parcel_sales_price_sqft_func</span><span class="p">,</span>
+                              <span class="n">parcel_is_allowed_func</span><span class="p">):</span>
+    <span class="n">utils</span><span class="o">.</span><span class="n">run_feasibility</span><span class="p">(</span><span class="n">parcels</span><span class="p">,</span>
+                          <span class="n">parcel_sales_price_sqft_func</span><span class="p">,</span>
+                          <span class="n">parcel_is_allowed_func</span><span class="p">,</span>
+                          <span class="n">pipeline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                          <span class="n">cfg</span><span class="o">=</span><span class="s1">&#39;proforma.yaml&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">pipeline</span></code> argument ensures that feasibility is only assessed
+(via the pro forma model) for parcels than do not contain any sites
+associated with projects in the pipeline. The results of this are passed to
+the next step, <code class="docutils literal"><span class="pre">residential_developer_pipeline</span></code>, also with the
+<code class="docutils literal"><span class="pre">pipeline=True</span></code> argument:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@orca</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="s1">&#39;residential_developer_pipeline&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">residential_developer_pipeline</span><span class="p">(</span><span class="n">feasibility</span><span class="p">,</span> <span class="n">households</span><span class="p">,</span> <span class="n">buildings</span><span class="p">,</span> <span class="n">parcels</span><span class="p">,</span>
+                                   <span class="n">year</span><span class="p">,</span> <span class="n">summary</span><span class="p">,</span> <span class="n">form_to_btype_func</span><span class="p">,</span>
+                                   <span class="n">add_extra_columns_func</span><span class="p">):</span>
+    <span class="n">new_buildings</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">run_developer</span><span class="p">(</span>
+        <span class="s2">&quot;residential&quot;</span><span class="p">,</span>
+        <span class="n">households</span><span class="p">,</span>
+        <span class="n">buildings</span><span class="p">,</span>
+        <span class="s1">&#39;residential_units&#39;</span><span class="p">,</span>
+        <span class="n">feasibility</span><span class="p">,</span>
+        <span class="n">parcels</span><span class="o">.</span><span class="n">parcel_size</span><span class="p">,</span>
+        <span class="n">parcels</span><span class="o">.</span><span class="n">ave_sqft_per_unit</span><span class="p">,</span>
+        <span class="n">parcels</span><span class="o">.</span><span class="n">total_residential_units</span><span class="p">,</span>
+        <span class="s1">&#39;res_developer.yaml&#39;</span><span class="p">,</span>
+        <span class="n">year</span><span class="o">=</span><span class="n">year</span><span class="p">,</span>
+        <span class="n">form_to_btype_callback</span><span class="o">=</span><span class="n">form_to_btype_func</span><span class="p">,</span>
+        <span class="n">add_more_columns_callback</span><span class="o">=</span><span class="n">add_extra_columns_func</span><span class="p">,</span>
+        <span class="n">pipeline</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">summary</span><span class="o">.</span><span class="n">add_parcel_output</span><span class="p">(</span><span class="n">new_buildings</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this case, the <code class="docutils literal"><span class="pre">pipeline</span></code> argument ensures that when potential buildings
+are selected for development, they are not immediately appended to the
+buildings table, but added to the pipeline. The <code class="docutils literal"><span class="pre">pipeline_utils</span></code> module
+contains helper functions that facilitate this process.</p>
+<p>Additional details:</p>
+<ul class="simple">
+<li>Both of the example models are set up with Orca tables named <code class="docutils literal"><span class="pre">pipeline</span></code> and
+<code class="docutils literal"><span class="pre">dev_sites</span></code>, which can be examined over the course of a simulation to see
+how sites are being added.</li>
+<li>The <code class="docutils literal"><span class="pre">year_built</span></code> column is currently added to sites based on the
+construction time used in the pro forma step. This is currently set up in
+<code class="docutils literal"><span class="pre">utils.add_buildings()</span></code>.</li>
+<li>The <code class="docutils literal"><span class="pre">add_more_columns_callback</span></code> in <code class="docutils literal"><span class="pre">utils.add_buildings()</span></code> must be
+configured to add columns that match the columns of the original buildings
+table. See the &#8220;add_extra_columns&#8221; function in San Diego&#8217;s custom model
+file for an example.</li>
+<li>In the San Diego example, the <code class="docutils literal"><span class="pre">scheduled_development_events</span></code> step is
+disabled, and instead, the scheduled development events are added to the
+pipeline upon loading data sources
+(see <code class="docutils literal"><span class="pre">sd_example/custom_datasources.py</span></code>).</li>
+</ul>
+</div>
+<div class="section" id="using-occupancy-rates-with-callback-functions">
+<h3>Using Occupancy Rates with Callback Functions<a class="headerlink" href="#using-occupancy-rates-with-callback-functions" title="Permalink to this headline">¶</a></h3>
 <p>Example here</p>
+</div>
 </div>
 </div>
 
