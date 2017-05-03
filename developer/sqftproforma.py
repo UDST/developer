@@ -846,6 +846,7 @@ class SqFtProForma(object):
     def get_ave_cost_sqft(self, form, parking_config):
         """
         Get the average cost per sqft for the pro forma for a given form
+
         Parameters
         ----------
         form : string
@@ -853,6 +854,7 @@ class SqFtProForma(object):
             in the config
         parking_config : string
             The parking configuration to get debug info for
+
         Returns
         -------
         cost : series
@@ -917,7 +919,8 @@ class SqFtProForma(object):
 
 class SqFtProFormaReference(object):
     """
-    Generate reference table for square foot pro forma analysis
+    Generate reference table for square foot pro forma analysis. Table is saved
+    as the `reference_dict` attribute.
     """
 
     def __init__(self, parcel_sizes, fars, forms,
@@ -948,7 +951,7 @@ class SqFtProFormaReference(object):
         self.tiled_parcel_sizes = columnize(
             np.repeat(self.parcel_sizes, self.fars.size))
 
-        self._generate_reference()
+        self.reference_dict = self._generate_reference()
 
     def _generate_reference(self):
         """
@@ -974,7 +977,7 @@ class SqFtProFormaReference(object):
                                                parking_config)
                 df_d[(name, parking_config)] = df
 
-        self.reference_dict = df_d
+        return df_d
 
     def _reference_dataframe(self, name, uses_distrib, parking_config):
         """
