@@ -17,14 +17,7 @@ The ``urbansim_parcels`` repository is structured in three directories:
 - ``/urbansim_parcels`` is the actual Python package that contains the core
   modules with code that interfaces with UrbanSim and the developer model.
   Those that have used ``urbansim_defaults`` or other starter models will
-  find the structure very similar:
-
-    - models.py
-    - variables.py
-    - utils.py
-    - datasources.py
-    - pipeline_utils.py
-
+  find the structure very similar.
 - ``/sd_example`` and ``/sf_example`` are directories containing an example
   regional model that uses much of the functionality provided in the
   "base" modules (e.g. ``urbansim_parcels/models.py``) but also add their own
