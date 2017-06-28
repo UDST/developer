@@ -309,9 +309,9 @@ class Developer(object):
         self.ave_unit_size[
             self.ave_unit_size < self.min_unit_size
         ] = self.min_unit_size
-        df["ave_unit_size"] = self.ave_unit_size
-        df["parcel_size"] = self.parcel_size
-        df['current_units'] = self.current_units
+        df.loc[:, 'ave_unit_size'] = self.ave_unit_size
+        df.loc[:, 'parcel_size'] = self.parcel_size
+        df.loc[:, 'current_units'] = self.current_units
         df = df[df.parcel_size < self.max_parcel_size]
 
         df['residential_units'] = (df.residential_sqft /

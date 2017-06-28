@@ -1070,11 +1070,11 @@ class SqFtProFormaReference(object):
         df['construction_months'] = construction_months
 
         if name == 'retail':
-            df['ave_cost_sqft'][
-                self.fars > self.max_retail_height] = np.nan
+            retail_fars_over_max = self.fars > self.max_retail_height
+            df.loc[retail_fars_over_max, 'ave_cost_sqft'] = np.nan
         if name == 'industrial':
-            df['ave_cost_sqft'][
-                self.fars > self.max_industrial_height] = np.nan
+            industrial_fars_over_max = self.fars > self.max_industrial_height
+            df.loc[industrial_fars_over_max, 'ave_cost_sqft'] = np.nan
 
         return df
 
