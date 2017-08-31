@@ -306,11 +306,12 @@ class Developer(object):
             return df
 
         l0 = len(df)
-	df = df[df.max_profit_far > 0]
-	l1 = len(df)
-	print('Filtering for max_profit_far > 0; {} rows dropped, '
-              .format(l0 - l1),		
-	      '{} feasible parcels remaining'.format(len(l1)))
+        df = df[df.max_profit_far > 0]
+        l1 = len(df)
+        print('Filtering for max_profit_far > 0; {} rows dropped, '
+              .format(l0 - l1),
+              '{} feasible parcels remaining'
+              .format(l1))
 
         self.ave_unit_size[
             self.ave_unit_size < self.min_unit_size
@@ -319,7 +320,8 @@ class Developer(object):
         df["parcel_size"] = self.parcel_size
         df['current_units'] = self.current_units
         df = df[df.parcel_size < self.max_parcel_size]
-	print('{} rows dropped due to parcel size maximum'.format(l1 - len(df)))
+        print('{} rows dropped due to parcel size maximum'
+              .format(l1 - len(df)))
 
         df['residential_units'] = (df.residential_sqft /
                                    df.ave_unit_size).round()
@@ -344,20 +346,21 @@ class Developer(object):
         """
         if len(df) == 0 or df.empty:
             return df
-	
-	l0 = len(df)
-	
+
+        l0 = len(df)
+
         if self.residential:
             df['net_units'] = df.residential_units - df.current_units
         else:
             df['net_units'] = df.job_spaces - df.current_units
-        
-	new_df = df[df.net_units > 0]
-	l1 = len(new_df)
-	print('Filtering out rows without positive net units',
-	      '{} rows removed'.format(l0 - l1),
-	      '{} feasible buildings remaining'.format(l1)
-	return new_df
+
+        new_df = df[df.net_units > 0]
+        l1 = len(new_df)
+        print('Filtering out rows without positive net units',
+              '{} rows removed'.format(l0 - l1),
+              '{} feasible buildings remaining'.format(l1))
+
+        return new_df
 
     @staticmethod
     def _calculate_probabilities(df, profit_to_prob_func):
