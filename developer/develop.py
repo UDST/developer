@@ -220,7 +220,7 @@ class Developer(object):
         df : DataFrame
         """
 
-		if self.forms is None or isinstance(self.forms, list):
+        if self.forms is None or isinstance(self.forms, list):
             df = self.keep_form_with_max_profit(self.forms)
         else:
             df = self.feasibility[self.forms]
