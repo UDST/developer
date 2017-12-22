@@ -702,9 +702,14 @@ class SqFtProForma(object):
         # turn fars and heights into nans which are not allowed by zoning
         # (so we can fillna with one of the other zoning constraints)
         fars = np.repeat(cost_sqft_index_col, len(df.index), axis=1)
-        fars[fars > df.min_max_fars.values + .01] = np.nan
+        mask = ~np.isnan(fars)  # mask out existing nans for safer comparison
+        mask *= np.nan_to_num(fars) > df.min_max_fars.values + .01
+        fars[mask] = np.nan
+        
         heights = np.repeat(heights, len(df.index), axis=1)
-        fars[heights > df.max_height.values + .01] = np.nan
+        mask = ~np.isnan(heights)
+        mask *= np.nan_to_num(heights) > df.max_height.values + .01
+        fars[mask] = np.nan
 
         # PROFIT CALCULATION
         # parcel sizes * possible fars
@@ -1193,10 +1198,14 @@ class SqFtProFormaReference(object):
                           - parking_stalls
                           * self.parking_sqft_d[parking_config]))
             # not all fars support surface parking
-            stories[stories < 0.0] = np.nan
+            mask = ~np.isnan(stories)  # mask out existing nans for safer comparison
+            mask[mask] *= stories[mask] < 0.0
+            stories[mask] = np.nan
             # I think we can assume that stories over 3
             # do not work with surface parking
-            stories[stories > 5.0] = np.nan
+            mask = ~np.isnan(stories)
+            mask[mask] *= stories[mask] > 5.0
+            stories[mask] = np.nan
 
         stories /= self.parcel_coverage
 
