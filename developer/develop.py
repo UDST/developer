@@ -260,7 +260,7 @@ class Developer(object):
         Parameters
         ----------
         forms : list of strings
-            List of forms to evaluate. If empty or None, all forms are 
+            List of forms to evaluate. If empty or None, all forms are
             evaluated.
 
         Returns

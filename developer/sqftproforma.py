@@ -705,7 +705,7 @@ class SqFtProForma(object):
         mask = ~np.isnan(fars)  # mask out existing nans for safer comparison
         mask *= np.nan_to_num(fars) > df.min_max_fars.values + .01
         fars[mask] = np.nan
-        
+
         heights = np.repeat(heights, len(df.index), axis=1)
         mask = ~np.isnan(heights)
         mask *= np.nan_to_num(heights) > df.max_height.values + .01
@@ -1198,7 +1198,7 @@ class SqFtProFormaReference(object):
                           - parking_stalls
                           * self.parking_sqft_d[parking_config]))
             # not all fars support surface parking
-            mask = ~np.isnan(stories)  # mask out existing nans for safer comparison
+            mask = ~np.isnan(stories)  # mask out existing nans
             mask[mask] *= stories[mask] < 0.0
             stories[mask] = np.nan
             # I think we can assume that stories over 3
