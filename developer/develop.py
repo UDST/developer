@@ -220,9 +220,7 @@ class Developer(object):
         df : DataFrame
         """
 
-        if self.forms is None:
-            df = self.feasibility
-        elif isinstance(self.forms, list):
+        if self.forms is None or isinstance(self.forms, list):
             df = self.keep_form_with_max_profit(self.forms)
         else:
             df = self.feasibility[self.forms]
@@ -261,13 +259,15 @@ class Developer(object):
 
         Parameters
         ----------
-        forms: list of strings
-            List of forms which compete which other.  Can leave some out.
+        forms : list of strings
+            List of forms to evaluate. If empty or None, all forms are
+            evaluated.
 
         Returns
         -------
-        Nothing.  Goes from a multi-index to a single index with only the
-        most profitable form.
+        DataFrame consisting of a subset of self.feasibility, where only
+        the most profitable form for each parcel is included.
+
         """
         f = self.feasibility
 
