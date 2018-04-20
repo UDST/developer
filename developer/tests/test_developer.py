@@ -29,6 +29,14 @@ def feasibility(simple_dev_inputs):
 
 
 @pytest.fixture
+def feasibility_multi_proposals(simple_dev_inputs):
+    pf = sqpf.SqFtProForma.from_defaults()
+    pf.proposals_to_keep = 3
+    out = pf.lookup("residential", simple_dev_inputs)
+    return out
+
+
+@pytest.fixture
 def base_args(feasibility):
     parcel_size = pd.Series([1000, 1000, 1000], index=['a', 'b', 'c'])
     ave_unit_size = pd.Series([650, 650, 650], index=['a', 'b', 'c'])
@@ -41,8 +49,27 @@ def base_args(feasibility):
 
 
 @pytest.fixture
+def base_args_multi_proposals(feasibility_multi_proposals):
+    feasibility_multi_proposals['parcel_size'] = 1000
+    feasibility_multi_proposals['ave_unit_size'] = 650
+    feasibility_multi_proposals['current_units'] = 0
+
+    return {'feasibility': feasibility_multi_proposals,
+            'parcel_size': feasibility_multi_proposals['parcel_size'],
+            'ave_unit_size': feasibility_multi_proposals['ave_unit_size'],
+            'current_units': feasibility_multi_proposals['current_units']}
+
+
+@pytest.fixture
 def res(base_args):
     args = base_args.copy()
+    args.update({'forms': 'residential'})
+    return args
+
+
+@pytest.fixture
+def res_multi_proposals(base_args_multi_proposals):
+    args = base_args_multi_proposals.copy()
     args.update({'forms': 'residential'})
     return args
 
@@ -55,7 +82,6 @@ def nonres(base_args):
 
 
 def test_res_developer(res):
-
     dev = develop.Developer(target_units=10, **res)
     bldgs = dev.pick()
     assert len(bldgs) == 1
@@ -66,6 +92,23 @@ def test_res_developer(res):
     assert len(bldgs) == 3
 
     dev = develop.Developer(target_units=2, residential=False, **res)
+    bldgs = dev.pick()
+    assert bldgs is None
+
+
+def test_res_developer_multi_proposals(res_multi_proposals):
+    dev = develop.Developer(target_units=10, keep_suboptimal=True,
+                            **res_multi_proposals)
+    bldgs = dev.pick()
+    assert len(bldgs) == 1
+
+    dev = develop.Developer(target_units=1000, keep_suboptimal=True,
+                            **res_multi_proposals)
+    bldgs = dev.pick()
+    assert len(bldgs) == 3
+
+    dev = develop.Developer(target_units=2, residential=False,
+                            keep_suboptimal=True, **res_multi_proposals)
     bldgs = dev.pick()
     assert bldgs is None
 

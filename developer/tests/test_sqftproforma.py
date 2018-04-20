@@ -115,6 +115,18 @@ def test_sqftproforma_defaults(simple_dev_inputs):
             assert len(out) == 0
 
 
+def test_sqftproforma_keep_n_best(simple_dev_inputs):
+    pf = sqpf.SqFtProForma.from_defaults()
+
+    number_of_parcels = len(simple_dev_inputs)
+
+    for number_to_keep in range(1, 5):
+        pf.proposals_to_keep = number_to_keep
+        out = pf.lookup('residential', simple_dev_inputs)
+        expected_total_proposals = number_to_keep * number_of_parcels
+        assert len(out) == expected_total_proposals
+
+
 def test_sqftproforma_max_dua(simple_dev_inputs_low_cost, max_dua_dev_inputs):
     pf = sqpf.SqFtProForma.from_defaults()
 

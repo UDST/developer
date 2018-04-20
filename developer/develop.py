@@ -60,6 +60,19 @@ class Developer(object):
         computing it internally by using the length of agents adn the sum of
         the relevant supply columin - this trusts the caller to know how to
         compute this.
+    keep_suboptimal: optional, int
+        Whether or not to retain all proposals in the feasibility table
+        instead of dropping sub-optimal forms and proposals. If setting this
+        to True, feasibility table must be in "lonng" form rather than "wide"
+        form, with one row per proposal and each proposal pertaining to a
+        single form.  At the proposal selection step, this allows
+        consideration of feasible proposals for a given parcel that may not be
+        the optimal form and which may not be the optimal proposal within a
+        given form.
+    noise_scale: float
+        Standard deviation of the gaussian noise to add to proposal profit
+        if keep_suboptimal is True.  A value of zero means results are
+        deterministic and most profitable proposal for each parcel is chosen.
 
     """
 
@@ -68,7 +81,8 @@ class Developer(object):
                  year=None, bldg_sqft_per_job=400.0,
                  min_unit_size=400, max_parcel_size=200000,
                  drop_after_build=True, residential=True,
-                 num_units_to_build=None):
+                 num_units_to_build=None, keep_suboptimal=False,
+                 noise_scale=0.0):
 
         if isinstance(feasibility, dict):
             feasibility = pd.concat(feasibility.values(),
@@ -86,11 +100,14 @@ class Developer(object):
         self.drop_after_build = drop_after_build
         self.residential = residential
         self.num_units_to_build = num_units_to_build
+        self.keep_suboptimal = keep_suboptimal
+        self.noise_scale = noise_scale
 
     @classmethod
     def from_yaml(cls, feasibility, forms, target_units,
                   parcel_size, ave_unit_size, current_units,
-                  year=None, yaml_str=None, str_or_buffer=None):
+                  year=None, yaml_str=None, str_or_buffer=None,
+                  keep_suboptimal=False, noise_scale=0.0):
         """
         Parameters
         ----------
@@ -104,13 +121,16 @@ class Developer(object):
         Developer object
         """
         cfg = utils.yaml_to_dict(yaml_str, str_or_buffer)
+        keep_suboptimal = cfg.get('keep_suboptimal', keep_suboptimal)
+        noise_scale = cfg.get('noise_scale', noise_scale)
 
         model = cls(
             feasibility, forms, target_units,
             parcel_size, ave_unit_size, current_units,
             year, cfg['bldg_sqft_per_job'],
             cfg['min_unit_size'], cfg['max_parcel_size'],
-            cfg['drop_after_build'], cfg['residential']
+            cfg['drop_after_build'], cfg['residential'],
+            keep_suboptimal=keep_suboptimal, noise_scale=noise_scale
         )
 
         logger.debug('loaded Developer model from YAML')
@@ -119,12 +139,12 @@ class Developer(object):
     @property
     def to_dict(self):
         """
-        Return a dict representation of a SqftProForma instance.
+        Return a dict representation of a Developer instance.
 
         """
         attributes = ['bldg_sqft_per_job',
                       'min_unit_size', 'max_parcel_size',
-                      'drop_after_build', 'residential']
+                      'drop_after_build', 'residential', 'keep_suboptimal']
 
         results = {}
         for attribute in attributes:
@@ -179,15 +199,20 @@ class Developer(object):
             DataFrame of buildings to add.  These buildings are rows from the
             DataFrame that is returned from feasibility.
         """
-        df = self.feasibility
         empty_warn = "WARNING THERE ARE NO FEASIBLE BUILDINGS TO CHOOSE FROM"
 
-        if len(df) == 0 or df.empty:
+        if len(self.feasibility) == 0 or self.feasibility.empty:
             print(empty_warn)
             return
 
         # Get DataFrame of potential buildings from SqFtProForma steps
-        df = self._get_dataframe_of_buildings()
+        # Unnecessary if feasibility table is already in long-form, as is the
+        # case if running developer with sub-optimal proposals retained.
+        if not self.keep_suboptimal:
+            df = self._get_dataframe_of_buildings()
+        else:
+            df = self.feasibility
+
         df = self._remove_infeasible_buildings(df)
         df = self._calculate_net_units(df)
 
@@ -200,10 +225,18 @@ class Developer(object):
 
         # Generate development probabilities and pick buildings to build
         p, df = self._calculate_probabilities(df, profit_to_prob_func)
+
+        # Parcel id needs to be a column rather than the index if
+        # selecting proposals with multiple proposals per parcel
+        if self.keep_suboptimal:
+            df.index.name = 'parcel_id'
+            df = df.reset_index()
+
         build_idx = self._select_buildings(df, p, custom_selection_func)
 
         # Drop built buildings from self.feasibility attribute if desired
-        self._drop_built_buildings(build_idx)
+        if not self.keep_suboptimal:
+            self._drop_built_buildings(build_idx)
 
         # Prep DataFrame of new buildings
         new_df = self._prepare_new_buildings(df, build_idx)
@@ -219,11 +252,11 @@ class Developer(object):
         -------
         df : DataFrame
         """
-
         if self.forms is None or isinstance(self.forms, list):
             df = self.keep_form_with_max_profit(self.forms)
         else:
             df = self.feasibility[self.forms]
+
         return df
 
     @staticmethod
@@ -396,29 +429,49 @@ class Developer(object):
             Index of buildings selected for development
 
         """
-
+        insufficient_units =  df.net_units.sum() < self.target_units
         if custom_selection_func is not None:
             build_idx = custom_selection_func(self, df, p)
-        elif df.net_units.sum() < self.target_units:
+        elif insufficient_units & (not self.keep_suboptimal):
             print("WARNING THERE WERE NOT ENOUGH PROFITABLE UNITS TO",
                   "MATCH DEMAND")
             build_idx = df.index.values
         elif self.target_units <= 0:
             build_idx = []
         else:
-            # we don't know how many developments we will need, as they differ
-            # in net_units. If all developments have net_units of 1 than we
-            # need target_units of them. So we choose the smaller of available
-            # developments and target_units.
-            choices = np.random.choice(df.index.values,
-                                       size=min(len(df.index),
-                                                self.target_units),
-                                       replace=False, p=p)
-            tot_units = df.net_units.loc[choices].values.cumsum()
-            ind = int(np.searchsorted(tot_units, self.target_units,
-                                      side="left")) + 1
-            build_idx = choices[:ind]
-
+            if not self.keep_suboptimal:
+                # We don't know how many developments we will need, as they
+                # differ in net_units. If all developments have net_units of 1
+                # than we need target_units of them. So we choose the smaller
+                # of available developments and target_units.
+                choices = np.random.choice(df.index.values,
+                                           size=min(len(df.index),
+                                                    self.target_units),
+                                           replace=False, p=p)
+                tot_units = df.net_units.loc[choices].values.cumsum()
+                ind = int(np.searchsorted(tot_units, self.target_units,
+                                          side="left")) + 1
+                build_idx = choices[:ind]
+            else:
+                # If sub-optimal proposals are in the pool, then sort by
+                # profitability and only select a single proposal per parcel.
+                # Gaussian noise optionally (default noise_scale is 0) added
+                # to profits to allow possibility of less profitable proposals
+                # out-competing the most profitable.
+                noise = np.random.normal(0, self.noise_scale, len(df))
+                df['profit_noisy'] = df.max_profit + noise
+                df.sort_values('profit_noisy', ascending=False, inplace=True)
+                choices = self.select_multi_parcel(df, self.target_units)
+                while True:
+                    if choices.net_units.sum() >= self.target_units:
+                        break
+                    df = df[~df.parcel_id.isin(choices.parcel_id)]
+                    if len(df) == 0:
+                        break
+                    new_target = self.target_units - choices.net_units.sum()
+                    next_choices = self.select_multi_parcel(df, new_target)
+                    choices = pd.concat([choices, next_choices])
+                build_idx = choices.index
         return build_idx
 
     def _drop_built_buildings(self, build_idx):
@@ -476,3 +529,39 @@ class Developer(object):
         new_df["stories"] = new_df.stories.apply(np.ceil)
 
         return new_df.reset_index(drop=drop)
+
+    def select_multi_parcel(self, proposals, target_units):
+        """
+        Proposal selection function when multiple proposals can exist per
+        parcel.  When multiple selected proposals share a parcel_id, keep
+        only one and drop the rest.
+
+        Parameters:
+        -----------
+        proposals: pandas.DataFrame
+            Proposals to choose from. Must have net_units and parcel_id
+            columns.
+        target_units: int
+            Number of units to try and select. May not be achieved so may need
+            to call this function iteratively.
+
+        Returns:
+        --------
+        DataFrame of selected proposals.
+
+        """
+        cumulative_sum_units = proposals.net_units.cumsum()
+        breakpoint = cumulative_sum_units.searchsorted(target_units)[0] + 1
+        choices_index = cumulative_sum_units.index.values[:breakpoint]
+        choices = proposals.loc[choices_index]
+
+        # Identify the proposals involving same parcel and drop all except one
+        choice_counts = choices.parcel_id.value_counts()
+        chosen_multiple = choice_counts[choice_counts > 1].index.values
+        single_choices = choices[~choices.parcel_id.isin(chosen_multiple)]
+        duplicate_choices = choices[choices.parcel_id.isin(chosen_multiple)]
+        keep_choice = duplicate_choices.parcel_id.drop_duplicates(keep='first')
+        dup_choices_to_keep = duplicate_choices.loc[keep_choice.index]
+
+        choices = pd.concat([single_choices, dup_choices_to_keep])
+        return choices
