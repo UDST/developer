@@ -429,7 +429,7 @@ class Developer(object):
             Index of buildings selected for development
 
         """
-        insufficient_units =  df.net_units.sum() < self.target_units
+        insufficient_units = df.net_units.sum() < self.target_units
         if custom_selection_func is not None:
             build_idx = custom_selection_func(self, df, p)
         elif insufficient_units & (not self.keep_suboptimal):
