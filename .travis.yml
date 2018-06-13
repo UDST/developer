@@ -29,6 +29,9 @@ install:
 
 script:
 - pycodestyle developer
-- py.test
+- py.test --cov developer --cov-report term-missing
 #- cd ../urbansim_parcels/sf_example && python simulate.py
 #- cd ../sd_example && python simulate.py
+
+after_success:
+- coveralls

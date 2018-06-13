@@ -10,10 +10,11 @@ from setuptools import setup, find_packages
 setup(
     name='developer',
     version='0.3.0',
-    description='Urbansim developer model',
+    description='UrbanSim developer model',
     author='UrbanSim Inc.',
     author_email='info@urbansim.com',
-    url='https://github.com/urbansim/developer',
+    license='BSD',
+    url='https://github.com/udst/developer',
     classifiers=[
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5'
