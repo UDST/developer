@@ -18,10 +18,8 @@ install:
   conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy pandas pytest matplotlib scipy statsmodels pytables
 - source activate test-environment
 - conda list
-- pip install pycodestyle
-- pip install orca
+- pip install pycodestyle coveralls pytest-cov orca osmnet pandana
 - pip install https://github.com/udst/urbansim/archive/master.zip
-- pip install osmnet pandana
 - pip install .
 #- cd .. && git clone git@github.com:urbansim/urbansim_parcels.git
 #- pip install ./urbansim_parcels
@@ -29,6 +27,9 @@ install:
 
 script:
 - pycodestyle developer
-- py.test
+- py.test --cov developer --cov-report term-missing
 #- cd ../urbansim_parcels/sf_example && python simulate.py
 #- cd ../sd_example && python simulate.py
+
+after_success:
+- coveralls
