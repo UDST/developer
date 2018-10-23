@@ -167,6 +167,12 @@ class SqFtProForma(object):
         consideration - is typically used to remove parcels with buildings
         older than a certain date for historical preservation, but is
         generally useful
+    proposals_to_keep : int (optional)
+        The number of feasible proposals to keep per parcel. This allows
+        sub-optimal proposals within a given form to be retained.
+        Sub-optimal proposals are often represent lower-density outcomes.
+        Defaults to 1, meaning that only most profitable proposal for a given
+        form is retained.
 
     """
 
@@ -179,7 +185,7 @@ class SqFtProForma(object):
                  loan_to_cost_ratio, drawdown_factor, interest_rate, loan_fees,
                  residential_to_yearly=True, forms_to_test=None,
                  only_built=True, pass_through=None, simple_zoning=False,
-                 parcel_filter=None
+                 parcel_filter=None, proposals_to_keep=1
                  ):
 
         self.parcel_sizes = parcel_sizes
@@ -214,6 +220,7 @@ class SqFtProForma(object):
         self.pass_through = [] if pass_through is None else pass_through
         self.simple_zoning = simple_zoning
         self.parcel_filter = parcel_filter
+        self.proposals_to_keep = proposals_to_keep
 
         self.check_is_reasonable()
         self._convert_types()
@@ -320,7 +327,8 @@ class SqFtProForma(object):
             cfg.get('only_built', True),
             cfg.get('pass_through', None),
             cfg.get('simple_zoning', False),
-            cfg.get('parcel_filter', None)
+            cfg.get('parcel_filter', None),
+            cfg.get('proposals_to_keep', 1)
         )
 
         logger.debug('loaded SqftProForma model from YAML')
@@ -381,7 +389,8 @@ class SqFtProForma(object):
                 'loan_to_cost_ratio': .7,
                 'drawdown_factor': .6,
                 'interest_rate': .05,
-                'loan_fees': .02
+                'loan_fees': .02,
+                'proposals_to_keep': 1
                 }
 
     @classmethod
@@ -416,7 +425,8 @@ class SqFtProForma(object):
                        'residential_to_yearly', 'parcel_filter', 'only_built',
                        'forms_to_test', 'pass_through', 'simple_zoning',
                        'construction_sqft_for_months', 'loan_to_cost_ratio',
-                       'drawdown_factor', 'interest_rate', 'loan_fees']
+                       'drawdown_factor', 'interest_rate', 'loan_fees',
+                       'proposals_to_keep']
 
         results = {}
         for attribute in unconverted:
@@ -572,7 +582,13 @@ class SqFtProForma(object):
         if len(lookup) == 0:
             return pd.DataFrame()
 
-        result = self._max_profit_parking(lookup)
+        if self.proposals_to_keep > 1:
+            lookup.sort_values('max_profit', ascending=False, inplace=True)
+            lookup_groups = lookup.reset_index().groupby('index')
+            result = lookup_groups.head(self.proposals_to_keep)
+            result.set_index('index', inplace=True)
+        else:
+            result = self._max_profit_parking(lookup)
 
         if self.residential_to_yearly and "residential" in self.pass_through:
             result["residential"] /= self.cap_rate
@@ -756,10 +772,24 @@ class SqFtProForma(object):
 
         profit = profit.astype('float')
         profit[np.isnan(profit)] = -np.inf
-        maxprofitind = np.argmax(profit, axis=0)
+
+        if self.proposals_to_keep > 1:
+            maxprofit_sorted_indexes = np.argsort(-profit, axis=0)
+            maxprofitind = maxprofit_sorted_indexes[:self.proposals_to_keep]
+        else:
+            maxprofitind = np.argmax(profit, axis=0)
 
         def twod_get(indexes, arr):
-            return arr[indexes, np.arange(indexes.size)].astype('float')
+            if indexes.ndim == 1:
+                return arr[indexes, np.arange(indexes.size)].astype('float')
+            elif indexes.ndim == 2:
+                arr = arr[indexes, np.arange(indexes.shape[1])]
+                return arr.astype('float').flatten()
+
+        if self.proposals_to_keep == 1:
+            outdf_index = df.index
+        else:
+            outdf_index = np.tile(df.index, self.proposals_to_keep)
 
         outdf = pd.DataFrame({
             'building_sqft': twod_get(maxprofitind, building_bulks),
@@ -774,7 +804,7 @@ class SqFtProForma(object):
             'parking_config': parking_config,
             'construction_time': twod_get(maxprofitind, months),
             'financing_cost': twod_get(maxprofitind, total_financing_costs)
-        }, index=df.index)
+        }, index=outdf_index)
 
         if self.pass_through:
             outdf[self.pass_through] = df[self.pass_through]
