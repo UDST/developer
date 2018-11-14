@@ -6,6 +6,7 @@ import pandas as pd
 
 import developer.utils as utils
 from developer import proposal_select
+from numbers import Number
 
 logger = logging.getLogger(__name__)
 
@@ -427,7 +428,7 @@ class Developer(object):
 
         """
         insufficient_units = df.net_units.sum() < self.target_units
-        if insufficient_units:
+        if insufficient_units and isinstance(self.target_units, Number):
             print("WARNING THERE ARE NOT ENOUGH PROFITABLE UNITS TO",
                   "MATCH DEMAND")
 
