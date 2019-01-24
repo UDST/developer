@@ -431,7 +431,7 @@ class Developer(object):
             insufficient_units = df.net_units.sum() < self.target_units
             if insufficient_units:
                 print("WARNING THERE ARE NOT ENOUGH PROFITABLE UNITS TO",
-                    "MATCH DEMAND")
+                      "MATCH DEMAND")
 
         if custom_selection_func is not None:
             build_idx = custom_selection_func(self, df, p, self.target_units)
