@@ -427,10 +427,17 @@ class Developer(object):
             Index of buildings selected for development
 
         """
-        insufficient_units = df.net_units.sum() < self.target_units
-        if insufficient_units and isinstance(self.target_units, Number):
-            print("WARNING THERE ARE NOT ENOUGH PROFITABLE UNITS TO",
-                  "MATCH DEMAND")
+        warning = "WARNING THERE ARE NOT ENOUGH PROFITABLE UNITS TO " \
+                  "MATCH DEMAND"
+        if isinstance(self.target_units, Number):
+            insufficient_units = df.net_units.sum() < self.target_units
+            if insufficient_units:
+                print(warning)
+        elif isinstance(self.target_units, pd.DataFrame):
+            insufficient_units = \
+                df.net_units.sum() < self.target_units.target_units.sum()
+            if insufficient_units:
+                print(warning)
 
         if custom_selection_func is not None:
             build_idx = custom_selection_func(self, df, p, self.target_units)
