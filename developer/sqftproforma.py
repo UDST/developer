@@ -779,6 +779,7 @@ class SqFtProForma(object):
         else:
             maxprofitind = np.argmax(profit, axis=0)
 
+        proposals_to_keep_in_form = min(self.proposals_to_keep, maxprofitind.shape[0])
         def twod_get(indexes, arr):
             if indexes.ndim == 1:
                 return arr[indexes, np.arange(indexes.size)].astype('float')
@@ -786,10 +787,10 @@ class SqFtProForma(object):
                 arr = arr[indexes, np.arange(indexes.shape[1])]
                 return arr.astype('float').flatten()
 
-        if self.proposals_to_keep == 1:
+        if proposals_to_keep_in_form == 1:
             outdf_index = df.index
         else:
-            outdf_index = np.tile(df.index, self.proposals_to_keep)
+            outdf_index = np.tile(df.index, proposals_to_keep_in_form)
 
         outdf = pd.DataFrame({
             'building_sqft': twod_get(maxprofitind, building_bulks),
