@@ -773,13 +773,13 @@ class SqFtProForma(object):
         profit = profit.astype('float')
         profit[np.isnan(profit)] = -np.inf
 
-        if self.proposals_to_keep > 1:
+        proposals_to_keep_in_form = min(self.proposals_to_keep, fars.shape[0])
+        if proposals_to_keep_in_form > 1:
             maxprofit_sorted_indexes = np.argsort(-profit, axis=0)
-            maxprofitind = maxprofit_sorted_indexes[:self.proposals_to_keep]
+            maxprofitind = maxprofit_sorted_indexes[:proposals_to_keep_in_form]
         else:
             maxprofitind = np.argmax(profit, axis=0)
 
-        proposals_to_keep_in_form = min(self.proposals_to_keep, maxprofitind.shape[0])
         def twod_get(indexes, arr):
             if indexes.ndim == 1:
                 return arr[indexes, np.arange(indexes.size)].astype('float')
