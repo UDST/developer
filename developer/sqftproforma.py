@@ -459,12 +459,6 @@ class SqFtProForma(object):
             costs[use] = values.tolist()
         results['costs'] = costs
 
-        time = {}
-        time_transposed = self.construction_months.transpose()
-        for index, use in enumerate(self.uses):
-            values = time_transposed[index]
-            time[use] = values.tolist()
-        results['construction_months'] = time
 
         return results
 
@@ -696,10 +690,13 @@ class SqFtProForma(object):
         cost_sqft_index_col = columnize(dev_info.index.values)
         parking_sqft_ratio = columnize(dev_info.parking_sqft_ratio.values)
         heights = columnize(dev_info.height.values)
-        months = columnize(dev_info.construction_months.values)
         resratio = self.res_ratios[form]
         nonresratio = 1.0 - resratio
         df['weighted_rent'] = np.dot(df[self.uses], self.forms[form])
+        month_keys = self.construction_sqft_for_months
+        month_values = self.construction_months[
+            list(self.forms.keys()).index(form)]
+        months_dict = dict(zip(month_keys, month_values))
 
         # Allow for user modification of DataFrame here
         df = modify_df(self, form, df) if modify_df else df
@@ -739,7 +736,10 @@ class SqFtProForma(object):
 
         # Financing costs
         loan_amount = total_construction_costs * self.loan_to_cost_ratio
-        months = np.repeat(months, len(df.index), axis=1)
+        months = building_bulks.copy()
+        for key, value in months_dict.items():
+            with np.errstate(invalid='ignore'):
+                months[months <= key] = value
         interest = (loan_amount
                     * self.drawdown_factor
                     * (self.interest_rate / 12 * months))
@@ -1084,8 +1084,8 @@ class SqFtProFormaReference(object):
         total_built_sqft = building_bulk + park_sqft
 
         # Array of construction time for each FAR
-        construction_months = self._construction_time(uses_distrib,
-                                                      total_built_sqft)
+        #construction_months = self._construction_time(uses_distrib,
+        #                                              total_built_sqft)
 
         df['far'] = self.fars
         df['pclsz'] = self.tiled_parcel_sizes
@@ -1102,7 +1102,6 @@ class SqFtProFormaReference(object):
         df['cost'] = df.build_cost + df.park_cost
         df['ave_cost_sqft'] = ((df.cost / df.total_built_sqft)
                                * self.profit_factor)
-        df['construction_months'] = construction_months
 
         if name == 'retail':
             retail_fars_over_max = self.fars > self.max_retail_height
