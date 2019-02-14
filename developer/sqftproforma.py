@@ -230,7 +230,7 @@ class SqFtProForma(object):
 
     def check_is_reasonable(self):
         fars = pd.Series(self.fars)
-        assert len(fars[fars > 20]) == 0
+        assert len(fars[fars > 500]) == 0
         assert len(fars[fars <= 0]) == 0
         for k, v in self.forms.items():
             assert isinstance(v, dict)
