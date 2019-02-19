@@ -694,8 +694,7 @@ class SqFtProForma(object):
         nonresratio = 1.0 - resratio
         df['weighted_rent'] = np.dot(df[self.uses], self.forms[form])
         month_keys = self.construction_sqft_for_months
-        month_values = self.construction_months[
-            list(self.forms.keys()).index(form)]
+        month_values = (self.forms[form] * self.construction_months).sum(axis=1)
         months_dict = dict(zip(month_keys, month_values))
 
         # Allow for user modification of DataFrame here
