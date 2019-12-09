@@ -430,31 +430,33 @@ class Developer(object):
         warning = "WARNING THERE ARE NOT ENOUGH PROFITABLE UNITS TO " \
                   "MATCH DEMAND"
         if isinstance(self.target_units, Number):
-            insufficient_units = df.net_units.sum() < self.target_units
+            target_units = self.target_units
+            insufficient_units = df.net_units.sum() < target_units
             if insufficient_units:
                 print(warning)
         elif isinstance(self.target_units, pd.DataFrame):
+            target_units = self.target_units.target_units.sum()
             insufficient_units = \
-                df.net_units.sum() < self.target_units.target_units.sum()
+                df.net_units.sum() < target_units
             if insufficient_units:
                 print(warning)
 
         if custom_selection_func is not None:
-            build_idx = custom_selection_func(self, df, p, self.target_units)
+            build_idx = custom_selection_func(self, df, p, target_units)
 
-        elif self.target_units <= 0:
+        elif target_units <= 0:
             build_idx = []
 
         elif self.keep_suboptimal:
             build_idx = proposal_select.weighted_random_choice_multiparcel(df,
-                                                          p, self.target_units)  # noqa
+                                                          p, target_units)  # noqa
 
         else:
             if insufficient_units:
                 build_idx = df.index.values
             else:
                 build_idx = proposal_select.weighted_random_choice(df, p,
-                                                             self.target_units)  # noqa
+                                                             target_units)  # noqa
 
         return build_idx
 
