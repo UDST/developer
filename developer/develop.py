@@ -28,6 +28,10 @@ class Developer(object):
         parameters passed previously to the pro forma.  If more than one form
         is passed the forms compete with each other (based on profitability)
         for which one gets built in order to meet demand.
+    target_units : int or DataFrame
+        The number of units that need to be built. DataFrame containing target
+        units by building type when the target vacancy is provided by building
+        type.
     parcel_size : series
         The size of the parcels.  This was passed to feasibility as well,
         but should be passed here as well.  Index should be parcel_ids.
@@ -430,31 +434,33 @@ class Developer(object):
         warning = "WARNING THERE ARE NOT ENOUGH PROFITABLE UNITS TO " \
                   "MATCH DEMAND"
         if isinstance(self.target_units, Number):
-            insufficient_units = df.net_units.sum() < self.target_units
+            target_units = self.target_units
+            insufficient_units = df.net_units.sum() < target_units
             if insufficient_units:
                 print(warning)
         elif isinstance(self.target_units, pd.DataFrame):
+            target_units = self.target_units.target_units.sum()
             insufficient_units = \
-                df.net_units.sum() < self.target_units.target_units.sum()
+                df.net_units.sum() < target_units
             if insufficient_units:
                 print(warning)
 
         if custom_selection_func is not None:
-            build_idx = custom_selection_func(self, df, p, self.target_units)
+            build_idx = custom_selection_func(self, df, p, target_units)
 
-        elif self.target_units <= 0:
+        elif target_units <= 0:
             build_idx = []
 
         elif self.keep_suboptimal:
             build_idx = proposal_select.weighted_random_choice_multiparcel(df,
-                                                          p, self.target_units)  # noqa
+                                                          p, target_units)  # noqa
 
         else:
             if insufficient_units:
                 build_idx = df.index.values
             else:
                 build_idx = proposal_select.weighted_random_choice(df, p,
-                                                             self.target_units)  # noqa
+                                                             target_units)  # noqa
 
         return build_idx
 
