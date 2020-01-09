@@ -28,6 +28,10 @@ class Developer(object):
         parameters passed previously to the pro forma.  If more than one form
         is passed the forms compete with each other (based on profitability)
         for which one gets built in order to meet demand.
+    target_units : int or DataFrame
+        The number of units that need to be built. DataFrame containing target
+        units by building type when the target vacancy is provided by building
+        type.
     parcel_size : series
         The size of the parcels.  This was passed to feasibility as well,
         but should be passed here as well.  Index should be parcel_ids.
