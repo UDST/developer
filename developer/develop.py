@@ -446,7 +446,7 @@ class Developer(object):
                 print(warning)
 
         if custom_selection_func is not None:
-            build_idx = custom_selection_func(self, df, p, target_units)
+            build_idx = custom_selection_func(self, df, p, self.target_units)
 
         elif target_units <= 0:
             build_idx = []
