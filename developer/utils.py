@@ -98,12 +98,12 @@ def yaml_to_dict(yaml_str=None, str_or_buffer=None):
         raise ValueError('One of yaml_str or str_or_buffer is required.')
 
     if yaml_str:
-        d = yaml.load(yaml_str)
+        d = yaml.safe_load(yaml_str)
     elif isinstance(str_or_buffer, str):
         with open(str_or_buffer) as f:
-            d = yaml.load(f)
+            d = yaml.safe_load(f)
     else:
-        d = yaml.load(str_or_buffer)
+        d = yaml.safe_load(str_or_buffer)
 
     return d
 
